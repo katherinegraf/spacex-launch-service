@@ -1,0 +1,32 @@
+version: '3'
+services:
+  db:
+    container_name: db
+    image: postgres:15.0
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - 5001:5432
+    volumes:
+      - db:/var/lib/postgresql/data
+  web:
+    build:
+      context: .
+    container_name: web
+    depends_on:
+      - db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    image: eclipse-temurin:17-jdk
+    ports:
+      - 8080:8080
+    tty: true
+
+volumes:
+  db:
+    driver: local
