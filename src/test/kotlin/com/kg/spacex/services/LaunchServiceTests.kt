@@ -20,7 +20,7 @@ class LaunchServiceTests {
     private val payloadService = PayloadService(apiServiceMock)
     private val capsuleService = CapsuleService(apiServiceMock)
     private val launchServiceMock = LaunchService(
-        apiServiceMock, launchpadService, payloadService, capsuleService
+        capsuleService, launchpadService, payloadService, apiServiceMock
     )
 
     @Test
