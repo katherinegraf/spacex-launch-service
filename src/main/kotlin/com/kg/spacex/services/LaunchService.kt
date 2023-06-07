@@ -15,7 +15,8 @@ class LaunchService (
     private val capsuleService: CapsuleService,
     private val launchpadService: LaunchpadService,
     private val payloadService: PayloadService,
-    private val spaceXAPIService: SpaceXAPIService
+    private val spaceXAPIService: SpaceXAPIService,
+    private val failureService: FailureService
 ) {
 
     /**
@@ -108,6 +109,7 @@ class LaunchService (
     fun fetchLaunchExternalForLaunchInternal(
         launch: LaunchInternal
     ): LaunchExternal? {
+        val failures = failureService.convertFailureInternalToFailureExternal(launch.failures, launch.id)
         val launchpad = launchpadService.fetchLaunchpad(launch.launchpadId) ?: return null
         val fetchedPayloads = payloadService.fetchPayloads(launch.payloadIds) ?: return null
         val payloadsForLaunchExternal = mutableListOf<PayloadExternal>()
@@ -121,7 +123,7 @@ class LaunchService (
                 launch.details,
                 launch.date_utc,
                 launch.success,
-                launch.failures,
+                failures,
                 launch.id,
                 launchpad,
                 payloadsForLaunchExternal,

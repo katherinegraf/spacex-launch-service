@@ -3,14 +3,14 @@ package com.kg.spacex.models.launch
 import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
-import com.kg.spacex.models.launch.failure.FailureExternal
+import com.kg.spacex.models.launch.failure.FailureInternal
 
 class LaunchInternal (
     val name: String,
     val details: String?,
     val date_utc: String,
     val success: Boolean,
-    val failures: List<FailureExternal>,
+    val failures: List<FailureInternal>,
     val id: String,
 
     @SerializedName(value = "launchpad")

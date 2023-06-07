@@ -5,17 +5,23 @@ import com.kg.spacex.models.launch.failure.FailureInternal
 import org.springframework.stereotype.Service
 
 @Service
-class FailureService {
+class FailureService() {
 
     fun convertFailureInternalToFailureExternal(
-        failure: FailureInternal,
+        failures: List<FailureInternal>,
         launchId: String
-    ): FailureExternal {
-        return FailureExternal(
-            time = failure.time,
-            altitude = failure.altitude,
-            reason = failure.reason,
-            launchId = launchId
-        )
+    ): List<FailureExternal> {
+        val failureExternals = mutableListOf<FailureExternal>()
+        failures.forEach { failure ->
+            failureExternals.add(
+                FailureExternal(
+                    time = failure.time,
+                    altitude = failure.altitude,
+                    reason = failure.reason,
+                    launchId = launchId
+                )
+            )
+        }
+        return failureExternals
     }
 }
