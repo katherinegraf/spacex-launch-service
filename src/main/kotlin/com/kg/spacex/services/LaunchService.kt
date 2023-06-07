@@ -2,6 +2,7 @@ package com.kg.spacex.services
 
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
+import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.utils.SPACEX_API_LAUNCHES_URL
 import org.springframework.stereotype.Service
 
@@ -107,9 +108,14 @@ class LaunchService (
     fun fetchLaunchExternalForLaunchInternal(
         launch: LaunchInternal
     ): LaunchExternal? {
-        val launchpad = launchpadService.fetchLaunchpad(launch.launchpad) ?: return null
-        val payloads = payloadService.fetchPayloads(launch.payloads) ?: return null
-        val capsules = capsuleService.fetchCapsules(launch.capsules) ?: return null
+        val launchpad = launchpadService.fetchLaunchpad(launch.launchpadId) ?: return null
+        val fetchedPayloads = payloadService.fetchPayloads(launch.payloadIds) ?: return null
+        val payloadsForLaunchExternal = mutableListOf<PayloadExternal>()
+        fetchedPayloads.forEach {
+            val p = payloadService.convertToPayloadStored(it)
+            payloadsForLaunchExternal.add(p)
+        }
+        val capsules = capsuleService.fetchCapsules(launch.capsuleIds) ?: return null
         return LaunchExternal(
                 launch.name,
                 launch.details,
@@ -118,7 +124,7 @@ class LaunchService (
                 launch.failures,
                 launch.id,
                 launchpad,
-                payloads,
+                payloadsForLaunchExternal,
                 capsules
             )
     }

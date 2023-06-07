@@ -2,15 +2,21 @@ package com.kg.spacex.controllers
 
 import com.kg.spacex.models.Capsule
 import com.kg.spacex.models.Launchpad
-import com.kg.spacex.models.Payload
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
+import com.kg.spacex.models.payload.PayloadInternal
 import com.kg.spacex.services.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
+
+// TODO create FailureService to convert Internal to External
+// TODO edit LaunchService to use FailureService
+// TODO add functions to save all entities in services
+// TODO edit controller to use new methods
+// TODO update tests
 
 /**
  * Connects to [launchService], [launchpadService], [payloadService], and [capsuleService]
@@ -106,7 +112,7 @@ class SpaceXController (
     @GetMapping("spacex-launches/payload/{id}")
     fun getOnePayload(
         @PathVariable("id") payloadId: String
-    ): ResponseEntity<Payload> {
+    ): ResponseEntity<PayloadInternal> {
         val payloadList = payloadService.fetchPayloads(listOf(payloadId))
         return if (payloadList == null) {
             ResponseEntity(HttpStatus.NOT_FOUND)

@@ -2,17 +2,25 @@ package com.kg.spacex.models.launch
 
 import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.google.gson.Gson
+import com.google.gson.annotations.SerializedName
+import com.kg.spacex.models.launch.failure.FailureExternal
 
 class LaunchInternal (
     val name: String,
     val details: String?,
     val date_utc: String,
     val success: Boolean,
-    val failures: List<Map<String, String>>,
+    val failures: List<FailureExternal>,
     val id: String,
-    val launchpad: String,
-    val payloads: List<String>,
-    val capsules: List<String>
+
+    @SerializedName(value = "launchpad")
+    val launchpadId: String,
+
+    @SerializedName(value = "payloads")
+    val payloadIds: List<String>,
+
+    @SerializedName(value = "capsules")
+    val capsuleIds: List<String>
 ) {
     class Deserializer : ResponseDeserializable<LaunchInternal> {
         override fun deserialize(content: String): LaunchInternal =
