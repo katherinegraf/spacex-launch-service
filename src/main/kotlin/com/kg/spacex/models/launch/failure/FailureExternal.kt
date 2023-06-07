@@ -15,10 +15,8 @@ class FailureExternal (
     @Column
     val reason: String,
 
-    // TODO fix launchId - shows as null
-    @ManyToOne
-    @JoinColumn(name = "fk_launch")
-    val launchId: LaunchExternal
+    @Column
+    val launchId: String
 ) {
     @Id
     @GeneratedValue
