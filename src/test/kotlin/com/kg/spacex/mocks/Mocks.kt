@@ -2,9 +2,9 @@ package com.kg.spacex.mocks
 
 import com.kg.spacex.models.Capsule
 import com.kg.spacex.models.Launchpad
-import com.kg.spacex.models.Payload
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
+import com.kg.spacex.models.payload.PayloadExternal
 
 val launchInternalMock: LaunchInternal = LaunchInternal(
     name = "CRS-2",
@@ -13,12 +13,13 @@ val launchInternalMock: LaunchInternal = LaunchInternal(
     success = true,
     failures = emptyList(),
     id = "5eb87ce1ffd86e000604b333",
-    launchpad = "5e9e4501f509094ba4566f84",
-    payloads = listOf("5eb0e4bbb6c3bb0006eeb1ed"),
-    capsules = listOf("5e9e2c5bf359189ef23b2667")
+    launchpadId = "5e9e4501f509094ba4566f84",
+    payloadIds = listOf("5eb0e4bbb6c3bb0006eeb1ed"),
+    capsuleIds = listOf("5e9e2c5bf359189ef23b2667")
 )
 
 val launchpadMock: Launchpad = Launchpad(
+    id = "5e9e4501f509094ba4566f84",
     full_name = "Cape Canaveral Space Force Station Space Launch Complex 40",
     locality = "Cape Canaveral",
     region = "Florida",
@@ -31,14 +32,16 @@ val launchpadMock: Launchpad = Launchpad(
     launch_successes = 97
 )
 
-val payloadsMock: List<Payload> = listOf(
-    Payload(
+val payloadsMock: List<PayloadExternal> = listOf(
+    PayloadExternal(
+        id = "5eb0e4bbb6c3bb0006eeb1ed",
         name = "CRS-2",
         type = "Dragon 1.0",
         regime = "low-earth",
-        customers = listOf("NASA (CRS)"),
-        nationalities = listOf("United States"),
-        manufacturers = listOf("SpaceX"),
+        launchId = "5e9e4501f509094ba4566f84",
+        customers = "NASA (CRS)",
+        nationalities = "United States",
+        manufacturers = "SpaceX",
         mass_kg = 677f,
         mass_lbs = 1492f
     )

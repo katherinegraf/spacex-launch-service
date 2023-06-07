@@ -4,7 +4,7 @@ import com.kg.spacex.mocks.launchExternalMock
 import com.kg.spacex.mocks.launchInternalMock
 import com.kg.spacex.models.Capsule
 import com.kg.spacex.models.Launchpad
-import com.kg.spacex.models.Payload
+import com.kg.spacex.models.payload.Payload
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
 import com.kg.spacex.services.*

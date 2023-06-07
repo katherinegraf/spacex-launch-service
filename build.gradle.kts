@@ -6,7 +6,7 @@ plugins {
 	kotlin("jvm") version "1.5.30"
 	kotlin("plugin.spring") version "1.4.31"
 	kotlin("plugin.jpa") version "1.4.31"
-	id(	"org.flywaydb.flyway") version "6.5.1"
+	id(	"org.flywaydb.flyway") version "9.19.3"
 
 }
 
@@ -46,7 +46,6 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 }
 
-// TODO add migrations
 flyway {
 	url = "jdbc:postgresql://localhost:5432/spacex"
 	user = "katherinegraf"
