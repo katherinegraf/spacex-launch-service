@@ -2,6 +2,7 @@ package com.kg.spacex.models
 
 import com.github.kittinunf.fuel.core.ResponseDeserializable
 import com.google.gson.Gson
+import com.kg.spacex.models.payload.PayloadInternal
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
@@ -18,19 +19,26 @@ class Capsule (
     val id: String,
 
     @Column
-    val status: String,
+    val type: String,
 
     @Column
-    val last_update: String,
+    var status: String,
+
+    @Column
+    var last_update: String?,
 
     @Column(nullable = true)
-    val water_landings: Long? = 0,
+    var water_landings: Long? = 0,
 
     @Column(nullable = true)
-    val land_landings: Long? = 0,
+    var land_landings: Long? = 0,
 ) {
     class Deserializer : ResponseDeserializable<Capsule> {
         override fun deserialize(content: String): Capsule =
             Gson().fromJson(content, Capsule::class.java)
+    }
+    class ArrayDeserializer : ResponseDeserializable<Array<Capsule>> {
+        override fun deserialize(content: String): Array<Capsule> =
+            Gson().fromJson(content, Array<Capsule>::class.java)
     }
 }

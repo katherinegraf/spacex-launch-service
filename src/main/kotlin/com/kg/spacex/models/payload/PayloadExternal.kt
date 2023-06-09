@@ -13,29 +13,29 @@ class PayloadExternal (
     val id: String,
 
     @Column
-    val name: String,
+    var name: String,
 
     @Column
-    val type: String,
+    var type: String,
 
     @Column(nullable = true)
-    val regime: String?,
+    var regime: String?,
 
     @Column
     val launchId: String,
 
     @Column
-    val customers: String,
+    var customers: String,
 
     @Column
-    val nationalities: String,
+    var nationalities: String,
 
     @Column
-    val manufacturers: String,
+    var manufacturers: String,
 
     @Column
-    val mass_kg: Float,
+    var mass_kg: Float,
 
     @Column
-    val mass_lbs: Float
+    var mass_lbs: Float
 )

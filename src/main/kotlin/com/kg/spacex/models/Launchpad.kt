@@ -21,19 +21,23 @@ class Launchpad (
     val region: String,
 
     @Column
-    val status: String,
+    var status: String,
 
     @Column
-    val details: String,
+    var details: String,
 
     @Column
-    val launch_attempts: Long,
+    var launch_attempts: Long,
 
     @Column
-    val launch_successes: Long,
+    var launch_successes: Long,
 ) {
     class Deserializer : ResponseDeserializable<Launchpad> {
         override fun deserialize(content: String): Launchpad =
             Gson().fromJson(content, Launchpad::class.java)
+    }
+    class ArrayDeserializer : ResponseDeserializable<Array<Launchpad>> {
+        override fun deserialize(content: String): Array<Launchpad> =
+            Gson().fromJson(content, Array<Launchpad>::class.java)
     }
 }
