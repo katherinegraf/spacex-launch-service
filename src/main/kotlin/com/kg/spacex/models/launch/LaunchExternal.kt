@@ -10,32 +10,32 @@ import javax.persistence.*
 @Table(name = "launches")
 class LaunchExternal (
     @Column
-    val name: String,
+    var name: String,
 
     @Column(nullable = true)
-    val details: String?,
+    var details: String?,
 
     @Column
-    val date_utc: String,
+    var date_utc: String,
 
     @Column
-    val success: Boolean,
+    var success: Boolean,
 
+    @Transient
     @OneToMany(mappedBy = "launchId")
-    val failures: List<FailureExternal>,
+    var failures: List<FailureExternal>,
 
     @Id
     @Column(name = "launch_id")
     val id: String,
 
     @ManyToOne
-    @JoinColumn(name = "fk_launchpad")
-    val launchpad: Launchpad,
+    @JoinColumn(name = "launchpad_id")
+    var launchpad: Launchpad,
 
+//    @Transient
+//    val payloads: List<PayloadExternal>,
+//
     @Transient
-    val payloads: List<PayloadExternal>,
-
-    @Transient
-
-    val capsules: List<Capsule>
+    var capsules: List<Capsule>
 )

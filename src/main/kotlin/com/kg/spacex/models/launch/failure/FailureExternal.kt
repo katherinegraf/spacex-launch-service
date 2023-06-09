@@ -1,24 +1,23 @@
 package com.kg.spacex.models.launch.failure
 
-import com.kg.spacex.models.launch.LaunchExternal
 import javax.persistence.*
 
 @Entity
 @Table(name = "launch_failures")
 class FailureExternal (
     @Column
-    val time: String,
+    var time: Long,
 
     @Column(nullable = true)
-    val altitude: Long?,
+    var altitude: Long?,
 
     @Column
-    val reason: String,
+    var reason: String,
 
     @Column
     val launchId: String
 ) {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0
 }

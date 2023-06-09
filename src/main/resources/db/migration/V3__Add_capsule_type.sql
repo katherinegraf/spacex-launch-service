@@ -1,0 +1,1 @@
+ALTER TABLE capsules ADD COLUMN type TEXT NOT NULL;

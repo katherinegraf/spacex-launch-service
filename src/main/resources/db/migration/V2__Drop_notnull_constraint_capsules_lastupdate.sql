@@ -1,0 +1,1 @@
+ALTER TABLE capsules ALTER COLUMN last_update DROP NOT NULL;

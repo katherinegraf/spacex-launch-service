@@ -23,4 +23,8 @@ class PayloadInternal (
         override fun deserialize(content: String): PayloadInternal =
             Gson().fromJson(content, PayloadInternal::class.java)
     }
+    class ArrayDeserializer : ResponseDeserializable<Array<PayloadInternal>> {
+        override fun deserialize(content: String): Array<PayloadInternal> =
+            Gson().fromJson(content, Array<PayloadInternal>::class.java)
+    }
 }
