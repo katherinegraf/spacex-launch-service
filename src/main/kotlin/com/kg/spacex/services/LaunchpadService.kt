@@ -16,22 +16,6 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
     @Autowired
     private lateinit var db: LaunchpadRepository
 
-    /**
-     * Fetches a Launchpad that matches the provided id.
-     *
-     * @param launchpadId is the id for a launchpad.
-     * @return Launchpad or null, if the API call fails or returns null.
-     */
-    fun fetchLaunchpad(
-        launchpadId: String?
-    ): Launchpad? {
-        val apiResult = spaceXAPIService.handleAPICall(
-            url = SPACEX_API_LAUNCHPADS_URL.plus(launchpadId),
-            deserializer = Launchpad.Deserializer()
-        ) ?: return null
-        return apiResult as Launchpad
-    }
-
     fun fetchOneLaunchpad(
         launchpadId: String
     ): Launchpad? {
@@ -41,7 +25,7 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
         ) ?: return null
         val launchpad = apiResult as Launchpad
         updateOrSaveLaunchpad(launchpad)
-        return (launchpad)
+        return launchpad
     }
 
     fun fetchAndSaveAllLaunchpads(): List<Launchpad>? {
@@ -50,10 +34,10 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
             url = SPACEX_API_LAUNCHPADS_URL,
             deserializer = Launchpad.ArrayDeserializer()
         ) as Array<*>? ?: return null
-        apiResult.forEach { lp ->
-            lp as Launchpad
-            updateOrSaveLaunchpad(lp)
-            launchpads.add(lp)
+        apiResult.forEach { launchpad ->
+            launchpad as Launchpad
+            updateOrSaveLaunchpad(launchpad)
+            launchpads.add(launchpad)
         }
         return launchpads
     }
@@ -73,7 +57,7 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
         }
     }
 
-    fun findLaunchpadOrNull(
+    fun getLaunchpadById(
         launchpadId: String
     ): Launchpad? {
         return db.findByIdOrNull(launchpadId)

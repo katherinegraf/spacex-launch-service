@@ -1,9 +1,7 @@
 package com.kg.spacex.models.payload
 
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Table
+import com.kg.spacex.models.launch.LaunchExternal
+import javax.persistence.*
 
 @Entity
 @Table(name = "payloads")

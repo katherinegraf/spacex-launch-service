@@ -6,12 +6,13 @@ import com.google.gson.annotations.SerializedName
 import com.kg.spacex.models.launch.failure.FailureInternal
 
 class LaunchInternal (
+
+    val id: String,
     val name: String,
     val details: String?,
     val date_utc: String,
-    val success: Boolean,
+    val success: Boolean?,
     val failures: List<FailureInternal>,
-    val id: String,
 
     @SerializedName(value = "launchpad")
     val launchpadId: String,

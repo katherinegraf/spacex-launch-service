@@ -1,15 +1,12 @@
 package com.kg.spacex.services
 
 import com.kg.spacex.models.Capsule
-import com.kg.spacex.models.payload.PayloadExternal
-import com.kg.spacex.models.payload.PayloadInternal
 import com.kg.spacex.repos.CapsuleRepository
+import com.kg.spacex.repos.LaunchCapsuleRepository
 import com.kg.spacex.utils.SPACEX_API_CAPSULES_URL
-import com.kg.spacex.utils.SPACEX_API_PAYLOADS_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import java.util.logging.Logger
 
 /**
  * Connects to [spaceXAPIService] to make call to SpaceX API.
@@ -20,25 +17,8 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
     @Autowired
     private lateinit var db: CapsuleRepository
 
-    /**
-     * Fetches a list of Capsules that match the provided id(s).
-     *
-     * @param capsuleIds is a list of ids for capsules.
-     * @return a list of Capsules or null, if the API call fails or returns null.
-     */
-    fun fetchCapsules(
-        capsuleIds: List<String>
-    ): List<Capsule>? {
-        val capsules = mutableListOf<Capsule>()
-        capsuleIds.forEach { id ->
-            val apiResult = spaceXAPIService.handleAPICall(
-                url = SPACEX_API_CAPSULES_URL.plus(id),
-                deserializer = Capsule.Deserializer()
-            ) ?: return null
-            capsules.add(apiResult as Capsule)
-        }
-        return capsules
-    }
+    @Autowired
+    private lateinit var launchCapsuleRepo: LaunchCapsuleRepository
 
     fun fetchOneCapsule(
         capsuleId: String
@@ -81,13 +61,25 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
         }
     }
 
-    fun findCapsulesById(
+    fun getCapsulesById(
         capsuleIds: List<String>
     ): List<Capsule>? {
         val capsules = mutableListOf<Capsule>()
         capsuleIds.forEach { id ->
             val foundCapsule = db.findByIdOrNull(id) ?: return null
             capsules.add(foundCapsule)
+        }
+        return capsules
+    }
+
+    fun getCapsulesForLaunch(
+        launchId: String
+    ): List<Capsule>? {
+        val capsules = mutableListOf<Capsule>()
+        val foundLaunchCapsuleDetails = launchCapsuleRepo.findByLaunchId(launchId) ?: return null
+        foundLaunchCapsuleDetails.forEach { launchCapsule ->
+            val capsule = db.findByIdOrNull(launchCapsule.capsuleId) ?: return null
+            capsules.add(capsule)
         }
         return capsules
     }
