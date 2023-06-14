@@ -26,26 +26,6 @@ class PayloadService(
 
     val logger = Logger.getLogger("logger")
 
-//    /**
-//     * Fetches a list of Payloads that match the provided id(s).
-//     *
-//     * @param payloadIds is a list of ids for payloads.
-//     * @return a list of Payloads or null, if the API call fails or returns null.
-//     */
-//    fun fetchPayloads(
-//        payloadIds: List<String>
-//    ): List<PayloadInternal>? {
-//        val fetchedPayloads = mutableListOf<PayloadInternal>()
-//        payloadIds.forEach { id ->
-//            val apiResult = spaceXAPIService.handleAPICall(
-//                url = SPACEX_API_PAYLOADS_URL.plus(id),
-//                deserializer = PayloadInternal.Deserializer()
-//            ) ?: return null
-//            fetchedPayloads.add(apiResult as PayloadInternal)
-//        }
-//        return fetchedPayloads
-//    }
-
     fun fetchOnePayload(
         payloadId: String
     ): PayloadExternal? {
@@ -64,9 +44,9 @@ class PayloadService(
             url = SPACEX_API_PAYLOADS_URL,
             deserializer = PayloadInternal.ArrayDeserializer()
         ) as Array<*>? ?: return null
-        apiResult.forEach { p ->
-            p as PayloadInternal
-            val newPayload = externalizePayload(p)
+        apiResult.forEach { payload ->
+            payload as PayloadInternal
+            val newPayload = externalizePayload(payload)
             updateOrSavePayload(newPayload)
             payloads.add(newPayload)
         }
@@ -110,8 +90,17 @@ class PayloadService(
                 logger.info("Launch ${payload.launchId} for payload ${payload.id} not found in Launches")
             } else {
                 db.save(payload)
-                // only saves payloads whose launchIds exist in launches table
+                // only saves payloads whose launchIds exist in launches api endpoint
             }
         }
+    }
+
+    fun getPayloadsByLaunchId(
+        launchId: String
+    ): List<PayloadExternal>? {
+        val payloads = mutableListOf<PayloadExternal>()
+        val foundPayloads = db.findAllByLaunchId(launchId) ?: return null
+        foundPayloads.forEach { payloads.add(it) }
+        return payloads
     }
 }

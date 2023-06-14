@@ -9,6 +9,11 @@ import javax.persistence.*
 @Entity
 @Table(name = "launches")
 class LaunchExternal (
+
+    @Id
+    @Column(name = "launch_id")
+    val id: String,
+
     @Column
     var name: String,
 
@@ -18,24 +23,19 @@ class LaunchExternal (
     @Column
     var date_utc: String,
 
-    @Column
-    var success: Boolean,
+    @Column(nullable = true)
+    var success: Boolean?,
 
     @Transient
-    @OneToMany(mappedBy = "launchId")
     var failures: List<FailureExternal>,
-
-    @Id
-    @Column(name = "launch_id")
-    val id: String,
 
     @ManyToOne
     @JoinColumn(name = "launchpad_id")
     var launchpad: Launchpad,
 
-//    @Transient
-//    val payloads: List<PayloadExternal>,
-//
+    @Transient
+    var payloads: List<PayloadExternal>,
+
     @Transient
     var capsules: List<Capsule>
 )

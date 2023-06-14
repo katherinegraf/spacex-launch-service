@@ -5,4 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface LaunchRepository : JpaRepository<LaunchExternal, String>
+interface LaunchRepository : JpaRepository<LaunchExternal, String> {
+
+    fun findAllByOrderById(): List<LaunchExternal>
+}

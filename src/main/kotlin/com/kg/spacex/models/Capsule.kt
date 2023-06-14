@@ -11,12 +11,12 @@ import javax.persistence.Table
 @Entity
 @Table(name = "capsules")
 class Capsule (
-    @Column(name = "serial_name")
-    val serial: String,
-
     @Id
     @Column(name = "capsule_id")
     val id: String,
+
+    @Column(name = "serial_name")
+    val serial: String,
 
     @Column
     val type: String,
@@ -32,7 +32,8 @@ class Capsule (
 
     @Column(nullable = true)
     var land_landings: Long? = 0,
-) {
+
+    ) {
     class Deserializer : ResponseDeserializable<Capsule> {
         override fun deserialize(content: String): Capsule =
             Gson().fromJson(content, Capsule::class.java)

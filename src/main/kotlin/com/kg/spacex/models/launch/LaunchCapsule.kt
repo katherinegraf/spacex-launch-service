@@ -4,7 +4,7 @@ import javax.persistence.*
 
 @Entity
 @Table(name = "launch_capsule_details")
-class LaunchCapsuleId (
+class LaunchCapsule (
     @Column
     val launchId: String,
 
@@ -12,6 +12,6 @@ class LaunchCapsuleId (
     val capsuleId: String
 ) {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0
 }

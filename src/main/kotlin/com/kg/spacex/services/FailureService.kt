@@ -43,4 +43,11 @@ class FailureService() {
             }
         }
     }
+
+    fun getFailuresById(
+        launchId: String
+    ): List<FailureExternal>? {
+        return db.findAllByLaunchId(launchId)
+    }
+
 }

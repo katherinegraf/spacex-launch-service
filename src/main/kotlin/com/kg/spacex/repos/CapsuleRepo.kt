@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository
 @Repository
 interface CapsuleRepository : JpaRepository<Capsule, String> {
 
-//    fun findById(capsuleId: String): Capsule?
+
 }
