@@ -1,7 +1,8 @@
 package com.kg.spacex.models.launch
 
-import com.kg.spacex.models.Capsule
+import com.kg.spacex.models.capsule.CapsuleInternal
 import com.kg.spacex.models.Launchpad
+import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.launch.failure.FailureExternal
 import com.kg.spacex.models.payload.PayloadExternal
 import javax.persistence.*
@@ -37,5 +38,5 @@ class LaunchExternal (
     var payloads: List<PayloadExternal>,
 
     @Transient
-    var capsules: List<Capsule>
+    var capsules: List<CapsuleExternal>
 )

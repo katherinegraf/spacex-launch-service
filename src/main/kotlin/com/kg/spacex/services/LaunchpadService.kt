@@ -18,28 +18,32 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
 
     fun fetchOneLaunchpad(
         launchpadId: String
-    ): Launchpad? {
+//    ): Launchpad? {
+    ) {
         val apiResult = spaceXAPIService.handleAPICall(
             url = SPACEX_API_LAUNCHPADS_URL.plus(launchpadId),
             deserializer = Launchpad.Deserializer()
-        ) ?: return null
+//        ) ?: return null
+        )
         val launchpad = apiResult as Launchpad
         updateOrSaveLaunchpad(launchpad)
-        return launchpad
+//        return launchpad
     }
 
-    fun fetchAndSaveAllLaunchpads(): List<Launchpad>? {
+//    fun fetchAndSaveAllLaunchpads(): List<Launchpad>? {
+fun fetchAndSaveAllLaunchpads() {
         val launchpads = mutableListOf<Launchpad>()
         val apiResult = spaceXAPIService.handleAPICall(
             url = SPACEX_API_LAUNCHPADS_URL,
             deserializer = Launchpad.ArrayDeserializer()
-        ) as Array<*>? ?: return null
-        apiResult.forEach { launchpad ->
+//        ) as Array<*>? ?: return null
+        ) as Array<*>?
+        apiResult?.forEach { launchpad ->
             launchpad as Launchpad
             updateOrSaveLaunchpad(launchpad)
             launchpads.add(launchpad)
         }
-        return launchpads
+//        return launchpads
     }
 
     fun updateOrSaveLaunchpad(
