@@ -9,7 +9,6 @@ import com.kg.spacex.utils.SPACEX_API_CAPSULES_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import java.util.logging.Logger
 
 /**
  * Connects to [spaceXAPIService] to make call to SpaceX API.
@@ -25,32 +24,26 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
 
     fun fetchAndSaveOneCapsule(
         capsuleId: String
-//    ): CapsuleExternal? {
     ) {
         val apiResult = spaceXAPIService.handleAPICall(
             url = SPACEX_API_CAPSULES_URL.plus(capsuleId),
             deserializer = CapsuleInternal.Deserializer()
-//        ) ?: return null
         )
         val capsule = apiResult as CapsuleInternal
         updateOrSaveCapsule(capsule)
-//        return getCapsulesById(listOf(capsuleId))?.get(0)
     }
 
-//    fun fetchAndSaveAllCapsules(): List<CapsuleInternal>? {
-fun fetchAndSaveAllCapsules() {
+    fun fetchAndSaveAllCapsules() {
         val capsules = mutableListOf<CapsuleInternal>()
         val apiResult = spaceXAPIService.handleAPICall(
             url = SPACEX_API_CAPSULES_URL,
             deserializer = CapsuleInternal.ArrayDeserializer()
-//        ) as Array<*>? ?: return null
         ) as Array<*>?
         apiResult?.forEach { capsule ->
             capsule as CapsuleInternal
             updateOrSaveCapsule(capsule)
             capsules.add(capsule)
         }
-//        return capsules
     }
 
     fun prepareToSaveCapsule(

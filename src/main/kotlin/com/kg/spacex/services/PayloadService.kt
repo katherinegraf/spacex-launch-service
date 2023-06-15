@@ -28,12 +28,10 @@ class PayloadService(
 
     fun fetchOnePayload(
         payloadId: String
-//    ): PayloadExternal? {
     ) {
         val apiResult = spaceXAPIService.handleAPICall(
             url = SPACEX_API_PAYLOADS_URL.plus(payloadId),
             deserializer = PayloadInternal.Deserializer()
-//        ) as PayloadInternal? ?: return null
         ) as PayloadInternal?
         if (apiResult != null) {
             val newPayload = externalizePayload(apiResult)
@@ -41,16 +39,13 @@ class PayloadService(
         } else {
             logger.warning("API call for payload $payloadId returned null.")
         }
-//        return newPayload
     }
 
-//    fun fetchAndSaveAllPayloads(): List<PayloadExternal>? {
     fun fetchAndSaveAllPayloads() {
         val payloads = mutableListOf<PayloadExternal>()
         val apiResult = spaceXAPIService.handleAPICall(
             url = SPACEX_API_PAYLOADS_URL,
             deserializer = PayloadInternal.ArrayDeserializer()
-//        ) as Array<*>? ?: return null
         ) as Array<*>?
         apiResult?.forEach { payload ->
             payload as PayloadInternal
@@ -58,7 +53,6 @@ class PayloadService(
             updateOrSavePayload(newPayload)
             payloads.add(newPayload)
         }
-//        return payloads
     }
 
     fun externalizePayload(

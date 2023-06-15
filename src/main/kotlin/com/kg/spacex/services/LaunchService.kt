@@ -103,14 +103,6 @@ class LaunchService (
             logger.warning("Failed to retrieve launchpad ${launchInternal.launchpadId}")
             return null
         }
-//        val payloads = payloadService.getPayloadsByLaunchId(launchInternal.id) ?: run {
-//            logger.warning("Failed to retrieve payloads for launch ${launchInternal.id}")
-//            return null
-//        }
-//        val capsules = capsuleService.getCapsulesById(launchInternal.capsuleIds) ?: run {
-//            logger.warning("Failed to retrieve capsules ${launchInternal.capsuleIds}")
-//            return null
-//        }
         return LaunchExternal(
             name = launchInternal.name,
             details = launchInternal.details,
@@ -121,8 +113,6 @@ class LaunchService (
             launchpad = launchpad,
             payloads = emptyList(),
             capsules = emptyList()
-//            payloads = payloads,
-//            capsules = capsules
         )
     }
 
@@ -136,34 +126,13 @@ class LaunchService (
             foundLaunch.success = launch.success
             foundLaunch.failures = launch.failures
             foundLaunch.launchpad = launch.launchpad
-//            foundLaunch.payloads = launch.payloads
-//            foundLaunch.capsules = launch.capsules
             db.save(foundLaunch)
-//            updateLaunchCapsuleJoinTable(foundLaunch)
             failureService.updateOrSaveFailures(foundLaunch.failures)
         } else {
             db.save(launch)
-//            updateLaunchCapsuleJoinTable(launch)
             failureService.updateOrSaveFailures(launch.failures)
         }
     }
-
-    //    fun updateLaunchCapsuleJoinTable(
-//        launch: LaunchExternal
-//    ) {
-//        val capsules = launch.capsules
-//        capsules.forEach { capsule ->
-//            val foundMatch = launchCapsuleRepo.findByLaunchIdAndCapsuleId(launch.id, capsule.id)
-//            if (foundMatch == null) {
-//                launchCapsuleRepo.save(
-//                    LaunchCapsule(
-//                        launchId = launch.id,
-//                        capsuleId = capsule.id
-//                    )
-//                )
-//            }
-//        }
-//    }
 
     fun buildLaunchExternalFromDbById(
         launchId: String
@@ -196,6 +165,5 @@ class LaunchService (
             capsules = capsules
         )
     }
-
 
 }
