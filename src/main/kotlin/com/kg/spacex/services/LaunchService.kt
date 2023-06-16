@@ -1,17 +1,12 @@
 package com.kg.spacex.services
 
-import com.kg.spacex.models.launch.LaunchCapsule
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
-import com.kg.spacex.repos.LaunchCapsuleRepository
 import com.kg.spacex.repos.LaunchRepository
 import com.kg.spacex.utils.SPACEX_API_LAUNCHES_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import java.sql.Date
-import java.sql.Timestamp
-import java.time.Instant
 import java.time.LocalDate
 import java.time.Period
 import java.util.logging.Logger
@@ -32,9 +27,6 @@ class LaunchService (
     @Autowired
     private lateinit var db: LaunchRepository
 
-    @Autowired
-    private lateinit var launchCapsuleRepo: LaunchCapsuleRepository
-
     val logger = Logger.getLogger("logger")
 
     fun fetchAllData() {
@@ -44,7 +36,6 @@ class LaunchService (
         payloadService.fetchAndSaveAllPayloads()
     }
 
-    // TODO new process flow won't need a fetchOne method
     fun fetchAndSaveOneLaunch(
         launchId: String
     ) {
@@ -175,7 +166,7 @@ class LaunchService (
     }
 
     fun isDataRefreshNeeded(): Boolean {
-        val lastUpdated = db.findFirstByOrderById().updated_at
+        val lastUpdated = db.findFirstByOrderById()?.updated_at ?: return true
         val today = LocalDate.now()
         val daysSinceLastUpdate = Period.between(lastUpdated, today).days
         return daysSinceLastUpdate > 6

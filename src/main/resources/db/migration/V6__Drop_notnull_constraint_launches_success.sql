@@ -1,1 +1,0 @@
-ALTER TABLE launches ALTER COLUMN success DROP NOT NULL;
