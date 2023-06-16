@@ -1,1 +1,0 @@
-ALTER TABLE launches ALTER COLUMN updated_at type TEXT;

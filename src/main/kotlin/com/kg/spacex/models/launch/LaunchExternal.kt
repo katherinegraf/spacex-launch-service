@@ -1,14 +1,10 @@
 package com.kg.spacex.models.launch
 
-import com.kg.spacex.models.capsule.CapsuleInternal
 import com.kg.spacex.models.Launchpad
 import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.launch.failure.FailureExternal
 import com.kg.spacex.models.payload.PayloadExternal
-import java.sql.Date
-import java.sql.Timestamp
 import java.time.LocalDate
-import java.util.*
 import javax.persistence.*
 
 @Entity

@@ -30,7 +30,7 @@ class SpaceXController (
     private val payloadService: PayloadService
 ) {
 
-    @GetMapping("spacex-launches/refresh")
+    @GetMapping("spacex-launches/")
     fun index(): ResponseEntity<List<LaunchExternal>> {
         val dataRefreshNeeded = launchService.isDataRefreshNeeded()
         if (dataRefreshNeeded) {
@@ -56,7 +56,7 @@ class SpaceXController (
         }
     }
 
-    @GetMapping("spacex-launches/new/capsules/{id}")
+    @GetMapping("spacex-launches/capsules/{id}")
     fun getOneCapsuleFromDb(
         @PathVariable("id") capsuleId: String
     ): ResponseEntity<List<CapsuleExternal>> {

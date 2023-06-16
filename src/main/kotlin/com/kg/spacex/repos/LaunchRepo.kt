@@ -9,5 +9,5 @@ interface LaunchRepository : JpaRepository<LaunchExternal, String> {
 
     fun findAllByOrderById(): List<LaunchExternal>
 
-    fun findFirstByOrderById(): LaunchExternal
+    fun findFirstByOrderById(): LaunchExternal?
 }
