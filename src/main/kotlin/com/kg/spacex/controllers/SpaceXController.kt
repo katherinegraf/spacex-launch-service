@@ -9,16 +9,10 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 
-// TODO add 'updated_on' date field somewhere
-//  have controller endpoints compare that field to today
-//  and only fetch new data if is outside allowed range (ie: 7 days)
-// TODO new flow is:
-//  - controller calls check date method to compare today to updated_on field
-//  - if within range, read from db
-//  - if outside range, trigger fetches to update db
-//      - then read from db
-
 // TODO update tests
+
+// TODO add endpoints for single payload, launchpad
+//  should they instead handle requests for one or all?
 
 /**
  * Connects to [launchService], [launchpadService], [payloadService], and [capsuleService]
@@ -37,8 +31,11 @@ class SpaceXController (
 ) {
 
     @GetMapping("spacex-launches/refresh")
-    fun refreshData(): ResponseEntity<List<LaunchExternal>> {
-        launchService.fetchAllData()
+    fun index(): ResponseEntity<List<LaunchExternal>> {
+        val dataRefreshNeeded = launchService.isDataRefreshNeeded()
+        if (dataRefreshNeeded) {
+            launchService.fetchAllData()
+        }
         val launches = launchService.getAllLaunchesFromDb()
         return if (launches == null) {
             ResponseEntity(HttpStatus.NOT_FOUND)
@@ -47,7 +44,7 @@ class SpaceXController (
         }
     }
 
-    @GetMapping("spacex-launches/new/{launchId}")
+    @GetMapping("spacex-launches/{launchId}")
     fun getOneLaunchFromDb(
         @PathVariable("launchId") launchId: String
     ): ResponseEntity<LaunchExternal> {
@@ -56,16 +53,6 @@ class SpaceXController (
             ResponseEntity(HttpStatus.NOT_FOUND)
         } else {
             ResponseEntity(launchExternal, HttpStatus.OK)
-        }
-    }
-
-    @GetMapping("spacex-launches/new/")
-    fun getAllLaunchesFromDb(): ResponseEntity<List<LaunchExternal>>? {
-        val launches = launchService.getAllLaunchesFromDb()
-        return if (launches == null) {
-            ResponseEntity(HttpStatus.NOT_FOUND)
-        } else {
-            ResponseEntity(launches, HttpStatus.OK)
         }
     }
 

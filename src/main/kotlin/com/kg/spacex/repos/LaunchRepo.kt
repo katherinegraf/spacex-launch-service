@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository
 interface LaunchRepository : JpaRepository<LaunchExternal, String> {
 
     fun findAllByOrderById(): List<LaunchExternal>
+
+    fun findFirstByOrderById(): LaunchExternal
 }
