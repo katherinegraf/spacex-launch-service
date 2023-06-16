@@ -9,6 +9,11 @@ import com.kg.spacex.utils.SPACEX_API_LAUNCHES_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import java.sql.Date
+import java.sql.Timestamp
+import java.time.Instant
+import java.time.LocalDate
+import java.time.Period
 import java.util.logging.Logger
 
 /**
@@ -112,7 +117,8 @@ class LaunchService (
             id = launchInternal.id,
             launchpad = launchpad,
             payloads = emptyList(),
-            capsules = emptyList()
+            capsules = emptyList(),
+            updated_at = LocalDate.now()
         )
     }
 
@@ -126,6 +132,7 @@ class LaunchService (
             foundLaunch.success = launch.success
             foundLaunch.failures = launch.failures
             foundLaunch.launchpad = launch.launchpad
+            foundLaunch.updated_at = launch.updated_at
             db.save(foundLaunch)
             failureService.updateOrSaveFailures(foundLaunch.failures)
         } else {
@@ -162,8 +169,16 @@ class LaunchService (
             failures = failures,
             launchpad = found.launchpad,
             payloads = payloads,
-            capsules = capsules
+            capsules = capsules,
+            updated_at = found.updated_at
         )
+    }
+
+    fun isDataRefreshNeeded(): Boolean {
+        val lastUpdated = db.findFirstByOrderById().updated_at
+        val today = LocalDate.now()
+        val daysSinceLastUpdate = Period.between(lastUpdated, today).days
+        return daysSinceLastUpdate > 6
     }
 
 }

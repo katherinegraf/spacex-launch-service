@@ -5,6 +5,10 @@ import com.kg.spacex.models.Launchpad
 import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.launch.failure.FailureExternal
 import com.kg.spacex.models.payload.PayloadExternal
+import java.sql.Date
+import java.sql.Timestamp
+import java.time.LocalDate
+import java.util.*
 import javax.persistence.*
 
 @Entity
@@ -38,5 +42,8 @@ class LaunchExternal (
     var payloads: List<PayloadExternal>,
 
     @Transient
-    var capsules: List<CapsuleExternal>
+    var capsules: List<CapsuleExternal>,
+
+    @Column
+    var updated_at: LocalDate?
 )
