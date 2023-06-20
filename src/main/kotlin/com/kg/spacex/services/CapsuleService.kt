@@ -10,9 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
-/**
- * Connects to [spaceXAPIService] to make call to SpaceX API.
- */
 @Service
 class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
 
@@ -25,24 +22,31 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
     fun fetchAndSaveOneCapsule(
         capsuleId: String
     ) {
-        val apiResult = spaceXAPIService.handleAPICall(
-            url = SPACEX_API_CAPSULES_URL.plus(capsuleId),
-            deserializer = CapsuleInternal.Deserializer()
-        )
-        val capsule = apiResult as CapsuleInternal
-        updateOrSaveCapsule(capsule)
+        val result = makeAPICall(capsuleId) as CapsuleInternal
+        updateOrSaveCapsule(result)
     }
 
     fun fetchAndSaveAllCapsules() {
-        val capsules = mutableListOf<CapsuleInternal>()
-        val apiResult = spaceXAPIService.handleAPICall(
-            url = SPACEX_API_CAPSULES_URL,
-            deserializer = CapsuleInternal.ArrayDeserializer()
-        ) as Array<*>?
-        apiResult?.forEach { capsule ->
-            capsule as CapsuleInternal
-            updateOrSaveCapsule(capsule)
-            capsules.add(capsule)
+        val resultList = makeAPICall(null) as Array<*>
+        resultList.forEach { result ->
+            result as CapsuleInternal
+            updateOrSaveCapsule(result)
+        }
+    }
+
+    fun makeAPICall(
+        capsuleId: String?
+    ): Any {
+        return if (capsuleId != null) {
+            spaceXAPIService.handleAPICall(
+                url = SPACEX_API_CAPSULES_URL.plus(capsuleId),
+                deserializer = CapsuleInternal.Deserializer()
+            ) as CapsuleInternal
+        } else {
+            spaceXAPIService.handleAPICall(
+                url = SPACEX_API_CAPSULES_URL,
+                deserializer = CapsuleInternal.ArrayDeserializer()
+            ) as Array<*>
         }
     }
 
