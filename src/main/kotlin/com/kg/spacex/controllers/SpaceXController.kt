@@ -1,7 +1,9 @@
 package com.kg.spacex.controllers
 
+import com.kg.spacex.models.Launchpad
 import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.launch.LaunchExternal
+import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.services.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -9,15 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 
-// TODO update tests
-
-// TODO add endpoints for single payload, launchpad
-//  should they instead handle requests for one or all?
-
 /**
- * Connects to [launchService], [launchpadService], [payloadService], and [capsuleService]
- * to access the calling methods in those service classes.
- *
  * @property spaceXAPIService exists for testing, so that an instance of SpaceXController
  * can be generated using a mocked API service.
  */
@@ -48,23 +42,47 @@ class SpaceXController (
     fun getOneLaunchFromDb(
         @PathVariable("launchId") launchId: String
     ): ResponseEntity<LaunchExternal> {
-        val launchExternal = launchService.buildLaunchExternalFromDbById(launchId)
-        return if (launchExternal == null) {
+        val launch = launchService.getLaunchExternalFromDbById(launchId)
+        return if (launch == null) {
             ResponseEntity(HttpStatus.NOT_FOUND)
         } else {
-            ResponseEntity(launchExternal, HttpStatus.OK)
+            ResponseEntity(launch, HttpStatus.OK)
         }
     }
 
     @GetMapping("spacex-launches/capsules/{id}")
     fun getOneCapsuleFromDb(
         @PathVariable("id") capsuleId: String
-    ): ResponseEntity<List<CapsuleExternal>> {
+    ): ResponseEntity<CapsuleExternal> {
         val capsule = capsuleService.getCapsulesById(listOf(capsuleId))
         return if (capsule == null) {
             ResponseEntity(HttpStatus.NOT_FOUND)
         } else {
-            ResponseEntity(capsule, HttpStatus.OK)
+            ResponseEntity(capsule[0], HttpStatus.OK)
+        }
+    }
+
+    @GetMapping("spacex-launches/payloads/{id}")
+    fun getOnePayloadFromDb(
+        @PathVariable("id") payloadId: String
+    ): ResponseEntity<PayloadExternal> {
+        val payload = payloadService.getPayloadByID(payloadId)
+        return if (payload == null) {
+            ResponseEntity(HttpStatus.NOT_FOUND)
+        } else {
+            ResponseEntity(payload, HttpStatus.OK)
+        }
+    }
+
+    @GetMapping("spacex-launches/launchpad/{id}")
+    fun getOneLaunchpadFromDb(
+        @PathVariable("id") launchpadId: String
+    ): ResponseEntity<Launchpad> {
+        val launchpad = launchpadService.getLaunchpadById(launchpadId)
+        return if (launchpad == null) {
+            ResponseEntity(HttpStatus.NOT_FOUND)
+        } else {
+            ResponseEntity(launchpad, HttpStatus.OK)
         }
     }
 

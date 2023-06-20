@@ -7,9 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
-/**
- * Connects to [spaceXAPIService] to make call to SpaceX API.
- */
 @Service
 class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
 
@@ -19,24 +16,31 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
     fun fetchOneLaunchpad(
         launchpadId: String
     ) {
-        val apiResult = spaceXAPIService.handleAPICall(
-            url = SPACEX_API_LAUNCHPADS_URL.plus(launchpadId),
-            deserializer = Launchpad.Deserializer()
-        )
-        val launchpad = apiResult as Launchpad
-        updateOrSaveLaunchpad(launchpad)
+        val result = makeAPICall(launchpadId) as Launchpad
+        updateOrSaveLaunchpad(result)
     }
 
     fun fetchAndSaveAllLaunchpads() {
-        val launchpads = mutableListOf<Launchpad>()
-        val apiResult = spaceXAPIService.handleAPICall(
-            url = SPACEX_API_LAUNCHPADS_URL,
-            deserializer = Launchpad.ArrayDeserializer()
-        ) as Array<*>?
-        apiResult?.forEach { launchpad ->
-            launchpad as Launchpad
-            updateOrSaveLaunchpad(launchpad)
-            launchpads.add(launchpad)
+        val resultList = makeAPICall(null) as Array<*>
+        resultList.forEach { result ->
+            result as Launchpad
+            updateOrSaveLaunchpad(result)
+        }
+    }
+
+    fun makeAPICall(
+        launchpadID: String?
+    ): Any {
+        return if (launchpadID != null) {
+            spaceXAPIService.handleAPICall(
+                url = SPACEX_API_LAUNCHPADS_URL.plus(launchpadID),
+                deserializer = Launchpad.Deserializer()
+            ) as Launchpad
+        } else {
+            spaceXAPIService.handleAPICall(
+                url = SPACEX_API_LAUNCHPADS_URL,
+                deserializer = Launchpad.ArrayDeserializer()
+            ) as Array<*>
         }
     }
 

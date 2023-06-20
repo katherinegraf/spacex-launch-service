@@ -10,9 +10,6 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.util.logging.Logger
 
-/**
- * Connects to [spaceXAPIService] to make call to SpaceX API.
- */
 @Service
 class PayloadService(
     private val spaceXAPIService: SpaceXAPIService,
@@ -29,33 +26,37 @@ class PayloadService(
     fun fetchOnePayload(
         payloadId: String
     ) {
-        val apiResult = spaceXAPIService.handleAPICall(
-            url = SPACEX_API_PAYLOADS_URL.plus(payloadId),
-            deserializer = PayloadInternal.Deserializer()
-        ) as PayloadInternal?
-        if (apiResult != null) {
-            val newPayload = externalizePayload(apiResult)
-            updateOrSavePayload(newPayload)
-        } else {
-            logger.warning("API call for payload $payloadId returned null.")
-        }
+        val apiResult = makeAPICall(payloadId) as PayloadInternal
+        val newPayload = prepareToSavePayload(apiResult)
+        updateOrSavePayload(newPayload)
     }
 
     fun fetchAndSaveAllPayloads() {
-        val payloads = mutableListOf<PayloadExternal>()
-        val apiResult = spaceXAPIService.handleAPICall(
-            url = SPACEX_API_PAYLOADS_URL,
-            deserializer = PayloadInternal.ArrayDeserializer()
-        ) as Array<*>?
-        apiResult?.forEach { payload ->
-            payload as PayloadInternal
-            val newPayload = externalizePayload(payload)
+        val apiResult = makeAPICall(null) as Array<*>
+        apiResult.forEach { result ->
+            result as PayloadInternal
+            val newPayload = prepareToSavePayload(result as PayloadInternal)
             updateOrSavePayload(newPayload)
-            payloads.add(newPayload)
         }
     }
 
-    fun externalizePayload(
+    fun makeAPICall(
+        payloadId: String?
+    ): Any {
+        return if (payloadId != null) {
+            spaceXAPIService.handleAPICall(
+                url = SPACEX_API_PAYLOADS_URL.plus(payloadId),
+                deserializer = PayloadInternal.Deserializer()
+            ) as PayloadInternal
+        } else {
+            spaceXAPIService.handleAPICall(
+                url = SPACEX_API_PAYLOADS_URL,
+                deserializer = PayloadInternal.ArrayDeserializer()
+            ) as Array<*>
+        }
+    }
+
+    fun prepareToSavePayload(
         payload: PayloadInternal
     ): PayloadExternal {
         return PayloadExternal(
@@ -87,14 +88,20 @@ class PayloadService(
             foundPayload.mass_lbs = payload.mass_lbs
             db.save(foundPayload)
         } else {
+            // only save payload if its launch data is offered through launches API endpoint
             val foundLaunch = launchRepo.findByIdOrNull(payload.launchId)
             if (foundLaunch == null) {
                 logger.info("Launch ${payload.launchId} for payload ${payload.id} not found in Launches")
             } else {
                 db.save(payload)
-                // only saves payloads whose launchIds exist in launches api endpoint
             }
         }
+    }
+
+    fun getPayloadByID(
+        payloadId: String
+    ): PayloadExternal? {
+        return db.findByIdOrNull(payloadId)
     }
 
     fun getPayloadsByLaunchId(

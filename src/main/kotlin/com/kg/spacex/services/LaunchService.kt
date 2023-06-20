@@ -11,10 +11,6 @@ import java.time.LocalDate
 import java.time.Period
 import java.util.logging.Logger
 
-/**
- * Connects to [capsuleService], [launchpadService], [payloadService], and [spaceXAPIService]
- * to access the calling methods in those service classes.
- */
 @Service
 class LaunchService (
     private val capsuleService: CapsuleService,
@@ -49,27 +45,12 @@ class LaunchService (
     fun fetchAndSaveAllLaunches() {
         val resultList = makeAPICall(null) as Array<*>
         resultList.forEach { result ->
-            val newLaunchExternal = prepareToSaveLaunch(result as LaunchInternal)
+            result as LaunchInternal
+            val newLaunchExternal = prepareToSaveLaunch(result)
             if (newLaunchExternal != null) {
                 updateOrSaveLaunch(newLaunchExternal)
             }
         }
-    }
-
-    fun getAllLaunchesFromDb(): List<LaunchExternal>? {
-        val foundLaunches = db.findAllByOrderById()
-        val launches = mutableListOf<LaunchExternal>()
-        foundLaunches.forEach { launch ->
-            val launchExternal = buildLaunchExternalFromDbById(launch.id) ?: return null
-            launches.add(launchExternal)
-        }
-        return launches
-    }
-
-    fun getOneLaunchFromDb(
-        launchId: String
-    ): LaunchExternal? {
-        return db.findByIdOrNull(launchId)
     }
 
     fun makeAPICall(
@@ -132,7 +113,17 @@ class LaunchService (
         }
     }
 
-    fun buildLaunchExternalFromDbById(
+    fun getAllLaunchesFromDb(): List<LaunchExternal>? {
+        val foundLaunches = db.findAllByOrderById()
+        val launches = mutableListOf<LaunchExternal>()
+        foundLaunches.forEach { launch ->
+            val launchExternal = getLaunchExternalFromDbById(launch.id) ?: return null
+            launches.add(launchExternal)
+        }
+        return launches
+    }
+
+    fun getLaunchExternalFromDbById(
         launchId: String
     ): LaunchExternal? {
         val found = db.findByIdOrNull(launchId) ?: run {
