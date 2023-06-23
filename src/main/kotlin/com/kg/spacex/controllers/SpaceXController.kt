@@ -28,7 +28,7 @@ class SpaceXController (
     fun index(): ResponseEntity<List<LaunchExternal>> {
         val dataRefreshNeeded = launchService.isDataRefreshNeeded()
         if (dataRefreshNeeded) {
-            launchService.fetchAllData()
+            launchService.fetchAllData() ?: return ResponseEntity(HttpStatus.NOT_FOUND)
         }
         val launches = launchService.getAllLaunchesFromDb()
         return if (launches == null) {
@@ -83,6 +83,18 @@ class SpaceXController (
             ResponseEntity(HttpStatus.NOT_FOUND)
         } else {
             ResponseEntity(launchpad, HttpStatus.OK)
+        }
+    }
+
+    @GetMapping("spacex-launches/launchpad/test/{id}")
+    fun fetchInvalidLaunchpad(
+        @PathVariable("id") launchpadId: String
+    ): Any? {
+        val result = launchpadService.fetchOneLaunchpad(launchpadId)
+        return if (result == null) {
+            ResponseEntity(null, HttpStatus.NOT_FOUND)
+        } else {
+            ResponseEntity.ok(null)
         }
     }
 

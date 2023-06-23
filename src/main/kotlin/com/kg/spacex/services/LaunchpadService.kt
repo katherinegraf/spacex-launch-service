@@ -6,6 +6,7 @@ import com.kg.spacex.utils.SPACEX_API_LAUNCHPADS_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import java.util.logging.Logger
 
 @Service
 class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
@@ -13,49 +14,50 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
     @Autowired
     private lateinit var db: LaunchpadRepository
 
+    val logger = Logger.getLogger("logger")
+
     fun fetchOneLaunchpad(
         launchpadId: String
-    ) {
-        val result = makeAPICall(launchpadId) as Launchpad
-        updateOrSaveLaunchpad(result)
+    ): Boolean {
+        val result = makeAPICall(launchpadId) as Launchpad?
+        return result != null
     }
 
-    fun fetchAndSaveAllLaunchpads() {
-        val resultList = makeAPICall(null) as Array<*>
-        resultList.forEach { result ->
-            result as Launchpad
-            updateOrSaveLaunchpad(result)
-        }
+    fun fetchAllLaunchpads(): Boolean {
+        val resultList = makeAPICall(null) as Array<*>?
+        return !(resultList == null || resultList.isEmpty())
     }
 
     fun makeAPICall(
         launchpadID: String?
-    ): Any {
+    ): Any? {
         return if (launchpadID != null) {
             spaceXAPIService.handleAPICall(
                 url = SPACEX_API_LAUNCHPADS_URL.plus(launchpadID),
                 deserializer = Launchpad.Deserializer()
-            ) as Launchpad
+            )
         } else {
             spaceXAPIService.handleAPICall(
                 url = SPACEX_API_LAUNCHPADS_URL,
                 deserializer = Launchpad.ArrayDeserializer()
-            ) as Array<*>
+            )
         }
     }
 
-    fun updateOrSaveLaunchpad(
-        launchpad: Launchpad
+    fun updateOrSaveLaunchpads(
+        launchpads: List<Launchpad>
     ) {
-        val foundLaunchpad = db.findByIdOrNull(launchpad.id)
-        if (foundLaunchpad != null) {
-            foundLaunchpad.status = launchpad.status
-            foundLaunchpad.details = launchpad.details
-            foundLaunchpad.launch_attempts = launchpad.launch_attempts
-            foundLaunchpad.launch_successes = launchpad.launch_successes
-            db.save(foundLaunchpad)
-        } else {
-            db.save(launchpad)
+        launchpads.forEach { launchpad ->
+            val foundLaunchpad = db.findByIdOrNull(launchpad.id)
+            if (foundLaunchpad != null) {
+                foundLaunchpad.status = launchpad.status
+                foundLaunchpad.details = launchpad.details
+                foundLaunchpad.launch_attempts = launchpad.launch_attempts
+                foundLaunchpad.launch_successes = launchpad.launch_successes
+                db.save(foundLaunchpad)
+            } else {
+                db.save(launchpad)
+            }
         }
     }
 

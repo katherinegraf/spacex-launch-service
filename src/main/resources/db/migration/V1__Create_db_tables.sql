@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS launch_failures;
 DROP TABLE IF EXISTS launch_capsule_details;
 
 CREATE TABLE capsules (
-	capsule_id TEXT PRIMARY KEY NOT NULL,
+	capsule_id VARCHAR PRIMARY KEY NOT NULL,
 	serial_name TEXT NOT NULL,
 	status TEXT NOT NULL,
 	last_update TEXT,
@@ -16,7 +16,7 @@ CREATE TABLE capsules (
 );
 
 CREATE TABLE launchpads (
-	launchpad_id TEXT PRIMARY KEY NOT NULL,
+	launchpad_id VARCHAR PRIMARY KEY NOT NULL,
 	full_name TEXT NOT NULL,
 	locality TEXT NOT NULL,
 	region TEXT NOT NULL,
@@ -27,12 +27,12 @@ CREATE TABLE launchpads (
 );
 
 CREATE TABLE launches (
-	launch_id TEXT PRIMARY KEY NOT NULL,
+	launch_id VARCHAR PRIMARY KEY NOT NULL,
 	name TEXT NOT NULL,
 	details TEXT,
 	date_utc TEXT NOT NULL,
 	success BOOLEAN,
-	launchpad_id TEXT NOT NULL,
+	launchpad_id VARCHAR NOT NULL,
 	updated_at DATE,
 	CONSTRAINT fk_launchpad
 	    FOREIGN KEY(launchpad_id)
@@ -44,14 +44,14 @@ CREATE TABLE launch_failures (
 	time INTEGER NOT NULL,
 	altitude INTEGER,
 	reason TEXT NOT NULL,
-	launch_id TEXT NOT NULL,
+	launch_id VARCHAR NOT NULL,
 	CONSTRAINT fk_launch
 	    FOREIGN KEY(launch_id)
 	        REFERENCES launches(launch_id)
 );
 
 CREATE TABLE payloads (
-	payload_id TEXT PRIMARY KEY NOT NULL,
+	payload_id VARCHAR PRIMARY KEY NOT NULL,
 	name TEXT NOT NULL,
 	type TEXT NOT NULL,
 	regime TEXT,
@@ -60,15 +60,15 @@ CREATE TABLE payloads (
 	manufacturers TEXT NOT NULL,
 	mass_kg FLOAT NOT NULL,
 	mass_lbs FLOAT NOT NULL,
-	launch_id TEXT NOT NULL,
-	CONSTRAINT fk_launch
+	launch_id VARCHAR NOT NULL,
+	CONSTRAINT fk_payloads_launch
 	    FOREIGN KEY(launch_id)
 	        REFERENCES launches(launch_id)
 );
 
 
 CREATE TABLE launch_capsule_details (
-	launch_id TEXT NOT NULL,
-	capsule_id TEXT NOT NULL,
+	launch_id VARCHAR NOT NULL,
+	capsule_id VARCHAR NOT NULL,
     id SERIAL PRIMARY KEY
 );

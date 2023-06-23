@@ -9,6 +9,8 @@ import com.kg.spacex.utils.SPACEX_API_CAPSULES_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import java.util.logging.Logger
+import kotlin.math.log
 
 @Service
 class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
@@ -19,34 +21,52 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
     @Autowired
     private lateinit var launchCapsuleRepo: LaunchCapsuleRepository
 
-    fun fetchAndSaveOneCapsule(
+    val logger = Logger.getLogger("logger")
+
+    fun fetchOneCapsule(
         capsuleId: String
-    ) {
-        val result = makeAPICall(capsuleId) as CapsuleInternal
-        updateOrSaveCapsule(result)
+    ): Boolean {
+        val result = makeAPICall(capsuleId) as CapsuleInternal?
+        return result != null
     }
 
-    fun fetchAndSaveAllCapsules() {
-        val resultList = makeAPICall(null) as Array<*>
-        resultList.forEach { result ->
-            result as CapsuleInternal
-            updateOrSaveCapsule(result)
-        }
+    fun fetchAllCapsules(): Boolean {
+        val resultList = makeAPICall(null) as Array<*>?
+        return !(resultList == null || resultList.isEmpty())
     }
 
     fun makeAPICall(
         capsuleId: String?
-    ): Any {
+    ): Any? {
         return if (capsuleId != null) {
             spaceXAPIService.handleAPICall(
                 url = SPACEX_API_CAPSULES_URL.plus(capsuleId),
                 deserializer = CapsuleInternal.Deserializer()
-            ) as CapsuleInternal
+            )
         } else {
             spaceXAPIService.handleAPICall(
                 url = SPACEX_API_CAPSULES_URL,
                 deserializer = CapsuleInternal.ArrayDeserializer()
-            ) as Array<*>
+            )
+        }
+    }
+
+    fun updateOrSaveCapsules(
+        capsules: List<CapsuleInternal>
+    ) {
+        capsules.forEach { capsule ->
+            val foundCapsule = db.findByIdOrNull(capsule.id)
+            if (foundCapsule != null) {
+                foundCapsule.status = capsule.status
+                foundCapsule.last_update = capsule.last_update
+                foundCapsule.water_landings = capsule.water_landings
+                foundCapsule.land_landings = capsule.land_landings
+                db.save(foundCapsule)
+            } else {
+                val newCapsuleExternal = prepareToSaveCapsule(capsule)
+                db.save(newCapsuleExternal)
+            }
+            updateLaunchCapsuleJoinTable(capsule)
         }
     }
 
@@ -62,23 +82,6 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
             water_landings = capsule.water_landings,
             land_landings = capsule.land_landings
         )
-    }
-
-    fun updateOrSaveCapsule(
-        capsule: CapsuleInternal
-    ) {
-        val foundCapsule = db.findByIdOrNull(capsule.id)
-        if (foundCapsule != null) {
-            foundCapsule.status = capsule.status
-            foundCapsule.last_update = capsule.last_update
-            foundCapsule.water_landings = capsule.water_landings
-            foundCapsule.land_landings = capsule.land_landings
-            db.save(foundCapsule)
-        } else {
-            val newCapsuleExternal = prepareToSaveCapsule(capsule)
-            db.save(newCapsuleExternal)
-        }
-        updateLaunchCapsuleJoinTable(capsule)
     }
 
     fun updateLaunchCapsuleJoinTable(
@@ -113,11 +116,19 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
         launchId: String
     ): List<CapsuleExternal>? {
         val capsules = mutableListOf<CapsuleExternal>()
-        val foundLaunchCapsuleDetails = launchCapsuleRepo.findByLaunchId(launchId) ?: return null
-        foundLaunchCapsuleDetails.forEach { launchCapsule ->
-            val capsule = db.findByIdOrNull(launchCapsule.capsuleId) ?: return null
-            capsules.add(capsule)
+        val foundMatches = launchCapsuleRepo.findAllByLaunchId(launchId)
+        return if (foundMatches.isEmpty()) {
+            logger.warning("Match not found in launch capsule repo")
+            null
+        } else {
+            foundMatches.forEach { launchCapsule ->
+                val foundCapsule = db.findByIdOrNull(launchCapsule.capsuleId) ?: run {
+                    logger.warning("Capsule ${launchCapsule.capsuleId} not found in capsule repo.")
+                    return null
+                }
+                capsules.add(foundCapsule)
+            }
+            capsules
         }
-        return capsules
     }
 }

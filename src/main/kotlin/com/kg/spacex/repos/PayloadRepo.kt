@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository
 @Repository
 interface PayloadRepository : JpaRepository<PayloadExternal, String> {
 
-    fun findAllByLaunchId(launchId: String): List<PayloadExternal>?
+    fun findAllByLaunchId(launchId: String): List<PayloadExternal>
 }

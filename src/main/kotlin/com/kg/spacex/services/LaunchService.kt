@@ -25,11 +25,25 @@ class LaunchService (
 
     val logger = Logger.getLogger("logger")
 
-    fun fetchAllData() {
-        capsuleService.fetchAndSaveAllCapsules()
-        launchpadService.fetchAndSaveAllLaunchpads()
+    fun fetchAllData(): Any? {
+        val capsules = capsuleService.fetchAllCapsules()
+        if (!capsules) {
+            logger.warning("Failed to fetch capsules")
+            return null
+        }
+        val launchpads = launchpadService.fetchAllLaunchpads()
+        if (!launchpads) {
+            logger.warning("Failed to fetch launchpads")
+            return null
+        }
         fetchAndSaveAllLaunches()
-        payloadService.fetchAndSaveAllPayloads()
+        val payloads = payloadService.fetchAllPayloads()
+        if (!payloads) {
+            logger.warning("Failed to fetch payloads")
+            return null
+        }
+        // call save methods in order after each fetch has an opportunity to force return null
+        return true
     }
 
     fun fetchAndSaveOneLaunch(
