@@ -1,5 +1,6 @@
 package com.kg.spacex.services
 
+import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
 import com.kg.spacex.repos.LaunchRepository
@@ -27,44 +28,40 @@ class LaunchService (
 
     fun fetchAllData(): Any? {
         val capsules = capsuleService.fetchAllCapsules()
-        if (!capsules) {
+        if (capsules == null) {
             logger.warning("Failed to fetch capsules")
             return null
         }
         val launchpads = launchpadService.fetchAllLaunchpads()
-        if (!launchpads) {
+        if (launchpads == null) {
             logger.warning("Failed to fetch launchpads")
             return null
         }
-        fetchAndSaveAllLaunches()
+        val launches = fetchAllLaunches()
+        if (launches == null) {
+            logger.warning("Failed to fetch launches")
+            return null
+        }
         val payloads = payloadService.fetchAllPayloads()
-        if (!payloads) {
+        if (payloads == null) {
             logger.warning("Failed to fetch payloads")
             return null
         }
-        // call save methods in order after each fetch has an opportunity to force return null
+        capsuleService.updateOrSaveCapsules(capsules)
+        launchpadService.updateOrSaveLaunchpads(launchpads)
+        updateOrSaveLaunches(launches)
+        payloadService.updateOrSavePayloads(payloads)
         return true
     }
 
-    fun fetchAndSaveOneLaunch(
-        launchId: String
-    ) {
-        val result = makeAPICall(launchId) as LaunchInternal
-        val newLaunchExternal = prepareToSaveLaunch(result)
-        if (newLaunchExternal != null) {
-            updateOrSaveLaunch(newLaunchExternal)
-        }
-    }
-
-    fun fetchAndSaveAllLaunches() {
-        val resultList = makeAPICall(null) as Array<*>
+    fun fetchAllLaunches(): List<LaunchInternal>? {
+        val resultList = makeAPICall(null) as Array<*>? ?: return null
+        val launches = mutableListOf<LaunchInternal>()
         resultList.forEach { result ->
             result as LaunchInternal
-            val newLaunchExternal = prepareToSaveLaunch(result)
-            if (newLaunchExternal != null) {
-                updateOrSaveLaunch(newLaunchExternal)
-            }
+            launches.add(result)
         }
+        return launches
     }
 
     fun makeAPICall(
@@ -91,7 +88,7 @@ class LaunchService (
             launchInternal.id
         )
         val launchpad = launchpadService.getLaunchpadById(launchInternal.launchpadId) ?: run {
-            logger.warning("Failed to retrieve launchpad ${launchInternal.launchpadId}")
+            logger.warning("Failed to find launchpad ${launchInternal.launchpadId} for launch ${launchInternal.id}")
             return null
         }
         return LaunchExternal(
@@ -108,23 +105,30 @@ class LaunchService (
         )
     }
 
-    fun updateOrSaveLaunch(
-        launch: LaunchExternal
-    ) {
-        val foundLaunch = db.findByIdOrNull(launch.id)
-        if (foundLaunch != null) {
-            foundLaunch.name = launch.name
-            foundLaunch.details = launch.details
-            foundLaunch.success = launch.success
-            foundLaunch.failures = launch.failures
-            foundLaunch.launchpad = launch.launchpad
-            foundLaunch.updated_at = launch.updated_at
-            db.save(foundLaunch)
-            failureService.updateOrSaveFailures(foundLaunch.failures)
-        } else {
-            db.save(launch)
-            failureService.updateOrSaveFailures(launch.failures)
+    fun updateOrSaveLaunches(
+        launches: List<LaunchInternal>
+    ): Any? {
+        launches.forEach { launch ->
+            val launchExternal = prepareToSaveLaunch(launch) ?: run {
+                logger.warning("Unable to prepareToSaveLaunch for launch ${launch.id}")
+                return null
+            }
+            val foundLaunch = db.findByIdOrNull(launchExternal.id)
+            if (foundLaunch != null) {
+                foundLaunch.name = launchExternal.name
+                foundLaunch.details = launchExternal.details
+                foundLaunch.success = launchExternal.success
+                foundLaunch.failures = launchExternal.failures
+                foundLaunch.launchpad = launchExternal.launchpad
+                foundLaunch.updated_at = launchExternal.updated_at
+                db.save(foundLaunch)
+                failureService.updateOrSaveFailures(foundLaunch.failures)
+            } else {
+                db.save(launchExternal)
+                failureService.updateOrSaveFailures(launchExternal.failures)
+            }
         }
+        return true
     }
 
     fun getAllLaunchesFromDb(): List<LaunchExternal>? {
@@ -141,21 +145,12 @@ class LaunchService (
         launchId: String
     ): LaunchExternal? {
         val found = db.findByIdOrNull(launchId) ?: run {
-            logger.warning("Failed to find launch $launchId.")
+            logger.warning("Failed to find launch $launchId")
             return null
         }
-        val failures = failureService.getFailuresById(launchId) ?: run {
-            logger.warning("Failed to find failures for launch $launchId.")
-            return null
-        }
-        val payloads = payloadService.getPayloadsByLaunchId(launchId) ?: run {
-            logger.warning("Failed to find payloads for launch $launchId.")
-            return null
-        }
-        val capsules = capsuleService.getCapsulesForLaunch(launchId) ?: run {
-            logger.warning("Failed to find capsules for launch $launchId.")
-            return null
-        }
+        val failures = failureService.getFailuresById(launchId)
+        val payloads = payloadService.getPayloadsByLaunchId(launchId)
+        val capsules = capsuleService.getCapsulesForLaunch(launchId)
         return LaunchExternal(
             id = found.id,
             name = found.name,

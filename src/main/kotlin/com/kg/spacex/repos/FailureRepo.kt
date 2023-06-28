@@ -9,6 +9,6 @@ interface FailureRepository : JpaRepository<FailureExternal, Long> {
 
     fun findByLaunchId(launchId: String): FailureExternal?
 
-    fun findAllByLaunchId(launchId: String): List<FailureExternal>?
+    fun findAllByLaunchId(launchId: String): List<FailureExternal>
 
 }

@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController
  * can be generated using a mocked API service.
  */
 @RestController
+@RequestMapping("/spacex-launches")
 class SpaceXController (
     private val spaceXAPIService: SpaceXAPIService,
     private val capsuleService: CapsuleService,
@@ -24,7 +26,7 @@ class SpaceXController (
     private val payloadService: PayloadService
 ) {
 
-    @GetMapping("spacex-launches/")
+    @GetMapping("/")
     fun index(): ResponseEntity<List<LaunchExternal>> {
         val dataRefreshNeeded = launchService.isDataRefreshNeeded()
         if (dataRefreshNeeded) {
@@ -38,7 +40,7 @@ class SpaceXController (
         }
     }
 
-    @GetMapping("spacex-launches/{launchId}")
+    @GetMapping("/{launchId}")
     fun getOneLaunchFromDb(
         @PathVariable("launchId") launchId: String
     ): ResponseEntity<LaunchExternal> {
@@ -50,7 +52,7 @@ class SpaceXController (
         }
     }
 
-    @GetMapping("spacex-launches/capsules/{id}")
+    @GetMapping("/capsules/{id}")
     fun getOneCapsuleFromDb(
         @PathVariable("id") capsuleId: String
     ): ResponseEntity<CapsuleExternal> {
@@ -62,7 +64,7 @@ class SpaceXController (
         }
     }
 
-    @GetMapping("spacex-launches/payloads/{id}")
+    @GetMapping("/payloads/{id}")
     fun getOnePayloadFromDb(
         @PathVariable("id") payloadId: String
     ): ResponseEntity<PayloadExternal> {
@@ -74,7 +76,7 @@ class SpaceXController (
         }
     }
 
-    @GetMapping("spacex-launches/launchpad/{id}")
+    @GetMapping("/launchpad/{id}")
     fun getOneLaunchpadFromDb(
         @PathVariable("id") launchpadId: String
     ): ResponseEntity<Launchpad> {
@@ -85,17 +87,4 @@ class SpaceXController (
             ResponseEntity(launchpad, HttpStatus.OK)
         }
     }
-
-    @GetMapping("spacex-launches/launchpad/test/{id}")
-    fun fetchInvalidLaunchpad(
-        @PathVariable("id") launchpadId: String
-    ): Any? {
-        val result = launchpadService.fetchOneLaunchpad(launchpadId)
-        return if (result == null) {
-            ResponseEntity(null, HttpStatus.NOT_FOUND)
-        } else {
-            ResponseEntity.ok(null)
-        }
-    }
-
 }
