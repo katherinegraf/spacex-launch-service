@@ -3,7 +3,6 @@ package com.kg.spacex.mocks
 import com.kg.spacex.models.capsule.CapsuleInternal
 import com.kg.spacex.models.Launchpad
 import com.kg.spacex.models.capsule.CapsuleExternal
-import com.kg.spacex.models.launch.LaunchCapsule
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
 import com.kg.spacex.models.payload.PayloadExternal
@@ -24,7 +23,7 @@ val launchpadMock: Launchpad = Launchpad(
     launch_successes = 97
 )
 
-val editedLaunchpadMock: Launchpad = Launchpad(
+val launchpadMockEdited: Launchpad = Launchpad(
     id = launchpadMock.id,
     full_name = launchpadMock.full_name,
     locality = launchpadMock.locality,
@@ -37,7 +36,7 @@ val editedLaunchpadMock: Launchpad = Launchpad(
 
 val payloadInternalMock: PayloadInternal = PayloadInternal(
     id = "5eb0e4bbb6c3bb0006eeb1ed",
-    name = "COTS Demo Flight 2",
+    name = "CRS-2",
     type = "Dragon 1.0",
     regime = "low-earth",
     launchId = "5eb87cdfffd86e000604b331",
@@ -48,7 +47,7 @@ val payloadInternalMock: PayloadInternal = PayloadInternal(
     mass_lbs = 1157f
 )
 
-val editedPayloadInternalMock: PayloadInternal = PayloadInternal(
+val payloadInternalMockEdited: PayloadInternal = PayloadInternal(
     id = payloadInternalMock.id,
     name = "abcdefg",
     type = payloadInternalMock.type,
@@ -74,6 +73,19 @@ val payloadExternalMock: PayloadExternal = PayloadExternal(
     mass_lbs = payloadInternalMock.mass_lbs
 )
 
+val payloadMockInvalidLaunchId: PayloadInternal = PayloadInternal(
+    id = "123",
+    name = payloadInternalMock.name,
+    type = payloadInternalMock.type,
+    regime = payloadInternalMock.regime,
+    launchId = "abcdefg",
+    customers = payloadInternalMock.customers,
+    nationalities = payloadInternalMock.nationalities,
+    manufacturers = payloadInternalMock.manufacturers,
+    mass_kg = payloadInternalMock.mass_kg,
+    mass_lbs = payloadInternalMock.mass_lbs
+)
+
 val capsuleInternalMock: CapsuleInternal = CapsuleInternal(
     id = "5e9e2c5bf359189ef23b2667",
     serial = "C104",
@@ -85,7 +97,7 @@ val capsuleInternalMock: CapsuleInternal = CapsuleInternal(
     launchIds = listOf("5eb87ce1ffd86e000604b333")
 )
 
-val editedCapsuleInternalMock: CapsuleInternal = CapsuleInternal(
+val capsuleInternalMockEdited: CapsuleInternal = CapsuleInternal(
     id = capsuleInternalMock.id,
     serial = capsuleInternalMock.serial,
     type = capsuleInternalMock.type,
@@ -97,19 +109,14 @@ val editedCapsuleInternalMock: CapsuleInternal = CapsuleInternal(
 )
 
 val capsuleExternalMock: CapsuleExternal = CapsuleExternal(
-    id = "5e9e2c5bf359189ef23b2667",
-    serial = "C104",
-    type = "Dragon 1.0",
-    status = "unknown",
-    last_update = "Location and status unknown",
-    water_landings = 1,
-    land_landings = 0,
+    id = capsuleInternalMock.id,
+    serial = capsuleInternalMock.serial,
+    type = capsuleInternalMock.type,
+    status = capsuleInternalMock.status,
+    last_update = capsuleInternalMock.last_update,
+    water_landings = capsuleInternalMock.water_landings,
+    land_landings = capsuleInternalMock.land_landings,
 )
-
-val launchCapsulesMock: List<LaunchCapsule> = listOf(LaunchCapsule(
-    launchId = capsuleInternalMock.launchIds[0],
-    capsuleId = "abc"
-))
 
 val launchInternalMock: LaunchInternal = LaunchInternal(
     name = "COTS 2",

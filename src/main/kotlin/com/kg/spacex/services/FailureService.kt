@@ -46,8 +46,7 @@ class FailureService() {
 
     fun getFailuresById(
         launchId: String
-    ): List<FailureExternal>? {
+    ): List<FailureExternal> {
         return db.findAllByLaunchId(launchId)
     }
-
 }

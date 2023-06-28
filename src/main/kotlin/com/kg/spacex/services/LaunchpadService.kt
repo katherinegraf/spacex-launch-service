@@ -6,15 +6,12 @@ import com.kg.spacex.utils.SPACEX_API_LAUNCHPADS_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import java.util.logging.Logger
 
 @Service
 class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
 
     @Autowired
     private lateinit var db: LaunchpadRepository
-
-    val logger = Logger.getLogger("logger")
 
     fun fetchOneLaunchpad(
         launchpadId: String
@@ -23,9 +20,14 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
         return result != null
     }
 
-    fun fetchAllLaunchpads(): Boolean {
-        val resultList = makeAPICall(null) as Array<*>?
-        return !(resultList == null || resultList.isEmpty())
+    fun fetchAllLaunchpads(): List<Launchpad>? {
+        val resultList = makeAPICall(null) as Array<*>? ?: return null
+        val launchpads = mutableListOf<Launchpad>()
+        resultList.forEach { result ->
+            result as Launchpad
+            launchpads.add(result)
+        }
+        return launchpads
     }
 
     fun makeAPICall(

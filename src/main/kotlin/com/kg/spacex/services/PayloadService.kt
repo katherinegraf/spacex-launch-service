@@ -8,7 +8,6 @@ import com.kg.spacex.utils.SPACEX_API_PAYLOADS_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import java.util.logging.Logger
 
 @Service
 class PayloadService(
@@ -16,11 +15,8 @@ class PayloadService(
 ) {
     @Autowired
     private lateinit var db: PayloadRepository
-
     @Autowired
     private lateinit var launchRepo: LaunchRepository
-
-    val logger = Logger.getLogger("logger")
 
     fun fetchOnePayload(
         payloadId: String
@@ -29,9 +25,14 @@ class PayloadService(
         return result !=null
     }
 
-    fun fetchAllPayloads(): Boolean {
-        val resultList = makeAPICall(null) as Array<*>?
-        return !(resultList == null || resultList.isEmpty())
+    fun fetchAllPayloads(): List<PayloadInternal>? {
+        val resultList = makeAPICall(null) as Array<*>? ?: return null
+        val payloads = mutableListOf<PayloadInternal>()
+        resultList.forEach { result ->
+            result as PayloadInternal
+            payloads.add(result)
+        }
+        return payloads
     }
 
     fun makeAPICall(
@@ -47,6 +48,32 @@ class PayloadService(
                 url = SPACEX_API_PAYLOADS_URL,
                 deserializer = PayloadInternal.ArrayDeserializer()
             )
+        }
+    }
+
+    fun updateOrSavePayloads(
+        payloads: List<PayloadInternal>
+    ) {
+        payloads.forEach { payload ->
+            val payloadExternal = prepareToSavePayload(payload)
+            val foundPayload = db.findByIdOrNull(payload.id)
+            if (foundPayload != null) {
+                foundPayload.name = payloadExternal.name
+                foundPayload.type = payloadExternal.type
+                foundPayload.regime = payloadExternal.regime
+                foundPayload.customers = payloadExternal.customers
+                foundPayload.nationalities = payloadExternal.nationalities
+                foundPayload.manufacturers = payloadExternal.manufacturers
+                foundPayload.mass_kg = payloadExternal.mass_kg
+                foundPayload.mass_lbs = payloadExternal.mass_lbs
+                db.save(foundPayload)
+            } else {
+                // Payload is only saved if its associated launch's data is provided via launches API endpoint
+                val foundLaunch = launchRepo.findByIdOrNull(payloadExternal.launchId)
+                if (foundLaunch != null) {
+                    db.save(payloadExternal)
+                }
+            }
         }
     }
 
@@ -67,35 +94,6 @@ class PayloadService(
         )
     }
 
-    fun updateOrSavePayloads(
-        payloads: List<PayloadInternal>
-    ) {
-        payloads.forEach { payload ->
-            val payloadExternal = prepareToSavePayload(payload)
-            val foundPayload = db.findByIdOrNull(payload.id)
-            if (foundPayload != null) {
-                logger.info("Didn't find payload")
-                foundPayload.name = payloadExternal.name
-                foundPayload.type = payloadExternal.type
-                foundPayload.regime = payloadExternal.regime
-                foundPayload.customers = payloadExternal.customers
-                foundPayload.nationalities = payloadExternal.nationalities
-                foundPayload.manufacturers = payloadExternal.manufacturers
-                foundPayload.mass_kg = payloadExternal.mass_kg
-                foundPayload.mass_lbs = payloadExternal.mass_lbs
-                db.save(foundPayload)
-            } else {
-                // only save payload if its launch data is offered through launches API endpoint
-                val foundLaunch = launchRepo.findByIdOrNull(payloadExternal.launchId)
-                if (foundLaunch == null) {
-                    logger.info("Launch ${payloadExternal.launchId} for payload ${payloadExternal.id} not found in Launches")
-                } else {
-                    db.save(payloadExternal)
-                }
-            }
-        }
-    }
-
     fun getPayloadByID(
         payloadId: String
     ): PayloadExternal? {
@@ -104,12 +102,11 @@ class PayloadService(
 
     fun getPayloadsByLaunchId(
         launchId: String
-    ): List<PayloadExternal>? {
+    ): List<PayloadExternal> {
         val payloads = mutableListOf<PayloadExternal>()
         val foundPayloads = db.findAllByLaunchId(launchId)
         return if (foundPayloads.isEmpty()) {
-            logger.warning("Match not found in payload repo")
-            null
+            emptyList()
         } else {
             foundPayloads.forEach { foundPayload -> payloads.add(foundPayload) }
             return payloads

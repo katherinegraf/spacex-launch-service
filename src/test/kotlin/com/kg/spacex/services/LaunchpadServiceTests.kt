@@ -1,7 +1,7 @@
 package com.kg.spacex.services
 
 import com.kg.spacex.mocks.launchpadMock
-import com.kg.spacex.mocks.editedLaunchpadMock
+import com.kg.spacex.mocks.launchpadMockEdited
 import com.kg.spacex.models.Launchpad
 import com.kg.spacex.repos.LaunchpadRepository
 import io.mockk.every
@@ -85,8 +85,8 @@ class LaunchpadServiceTests {
         val expectedDetails = launchpadMock.details
         assert(firstResult != null)
         assert(firstResult?.details == expectedDetails)
-        launchpadService.updateOrSaveLaunchpads(listOf(editedLaunchpadMock))
-        val secondResult = launchpadRepo.findByIdOrNull(editedLaunchpadMock.id)
-        assert(secondResult?.details == editedLaunchpadMock.details)
+        launchpadService.updateOrSaveLaunchpads(listOf(launchpadMockEdited))
+        val secondResult = launchpadRepo.findByIdOrNull(launchpadMockEdited.id)
+        assert(secondResult?.details == launchpadMockEdited.details)
     }
 }

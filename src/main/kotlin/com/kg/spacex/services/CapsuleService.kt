@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.util.logging.Logger
-import kotlin.math.log
 
 @Service
 class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
@@ -23,6 +22,7 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
 
     val logger = Logger.getLogger("logger")
 
+    // TODO get rid of fetchOne methods? Only used in testing.
     fun fetchOneCapsule(
         capsuleId: String
     ): Boolean {
@@ -30,9 +30,14 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
         return result != null
     }
 
-    fun fetchAllCapsules(): Boolean {
-        val resultList = makeAPICall(null) as Array<*>?
-        return !(resultList == null || resultList.isEmpty())
+    fun fetchAllCapsules(): List<CapsuleInternal>? {
+        val resultList = makeAPICall(null) as Array<*>? ?: return null
+        val capsules = mutableListOf<CapsuleInternal>()
+        resultList.forEach { result ->
+            result as CapsuleInternal
+            capsules.add(result)
+        }
+        return capsules
     }
 
     fun makeAPICall(
@@ -114,19 +119,18 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
 
     fun getCapsulesForLaunch(
         launchId: String
-    ): List<CapsuleExternal>? {
+    ): List<CapsuleExternal> {
         val capsules = mutableListOf<CapsuleExternal>()
-        val foundMatches = launchCapsuleRepo.findAllByLaunchId(launchId)
-        return if (foundMatches.isEmpty()) {
-            logger.warning("Match not found in launch capsule repo")
-            null
+        val foundJoinRecords = launchCapsuleRepo.findAllByLaunchId(launchId)
+        return if (foundJoinRecords.isEmpty()) {
+            emptyList()
         } else {
-            foundMatches.forEach { launchCapsule ->
-                val foundCapsule = db.findByIdOrNull(launchCapsule.capsuleId) ?: run {
-                    logger.warning("Capsule ${launchCapsule.capsuleId} not found in capsule repo.")
-                    return null
+            foundJoinRecords.forEach { joinRecord ->
+                val foundCapsule = db.findByIdOrNull(joinRecord.capsuleId) ?: run {
+                    logger.warning("Capsule ${joinRecord.capsuleId} not found in capsule repo, " +
+                            "yet exists in launch capsule repo.")
                 }
-                capsules.add(foundCapsule)
+                capsules.add(foundCapsule as CapsuleExternal)
             }
             capsules
         }

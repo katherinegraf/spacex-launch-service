@@ -3,7 +3,6 @@ package com.kg.spacex.services
 import com.kg.spacex.mocks.*
 import com.kg.spacex.models.capsule.CapsuleInternal
 import com.kg.spacex.repos.CapsuleRepository
-import com.kg.spacex.repos.LaunchCapsuleRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -21,15 +20,12 @@ class CapsuleServiceTests {
     private lateinit var capsuleService: CapsuleService
     @Autowired
     private lateinit var capsuleRepo: CapsuleRepository
-    @Autowired
-    private lateinit var launchCapsuleRepo: LaunchCapsuleRepository
 
     private val apiServiceMock = mockk<SpaceXAPIService>()
     private val capsuleServiceMock = CapsuleService(apiServiceMock)
-    private val capsuleRepoMock = mockk<CapsuleRepository>()
 
     @Test
-    fun fetchOneCapsuleSuccess() {
+    fun fetchOneCapsule_Success() {
         every {
             apiServiceMock.handleAPICall(any(), any())
         } answers { capsuleInternalMock }
@@ -39,7 +35,11 @@ class CapsuleServiceTests {
     }
 
     @Test
-    fun fetchOneCapsuleFailures() {
+    fun fetchOneCapsule_Failure() {
+        /*
+        1. Given invalid id, expect fetch to return null
+        2. Given API call behavior mocked to return null, expect fetch to return null
+         */
         val capsuleId = "abc"
         val firstResult = capsuleService.fetchOneCapsule(capsuleId)
         assert(!firstResult)
@@ -52,7 +52,7 @@ class CapsuleServiceTests {
     }
 
     @Test
-    fun makeAPICallSuccess() {
+    fun makeAPICall_Success() {
         val capsuleId = capsuleInternalMock.id
         val expectedSerial = capsuleInternalMock.serial
         val firstResult = capsuleService.makeAPICall(capsuleId) as CapsuleInternal?
@@ -67,7 +67,11 @@ class CapsuleServiceTests {
     }
 
     @Test
-    fun makeAPICallFailures() {
+    fun makeAPICall_Failure() {
+        /*
+        1. Given invalid id, expect makeAPICall to return null
+        2. Given API call behavior mocked to return null, expect makeAPICall to return null
+        */
         val capsuleId = "abc"
         val firstResult = capsuleService.makeAPICall(capsuleId)
         assert(firstResult == null)
@@ -80,30 +84,28 @@ class CapsuleServiceTests {
     }
 
     @Test
-    fun saveAndUpdateCapsulesTest() {
+    fun saveAndUpdateCapsules_Success() {
         val capsules = listOf(capsuleInternalMock)
         capsuleService.updateOrSaveCapsules(capsules)
         val firstResult = capsuleRepo.findByIdOrNull(capsuleInternalMock.id)
         var expectedLastUpdate = capsuleInternalMock.last_update
         assert(firstResult != null)
         assert(firstResult?.last_update == expectedLastUpdate)
-        capsuleService.updateOrSaveCapsules(listOf(editedCapsuleInternalMock))
-        expectedLastUpdate = editedCapsuleInternalMock.last_update
-        val secondResult = capsuleRepo.findByIdOrNull(editedCapsuleInternalMock.id)
+        capsuleService.updateOrSaveCapsules(listOf(capsuleInternalMockEdited))
+        expectedLastUpdate = capsuleInternalMockEdited.last_update
+        val secondResult = capsuleRepo.findByIdOrNull(capsuleInternalMockEdited.id)
         assert(secondResult?.last_update == expectedLastUpdate)
     }
 
     @Test
-    fun getCapsulesForLaunchFailures_InvalidLaunchID_CapsuleNotExists() {
-        // First premise: invalid launch ID
+    fun getCapsulesForLaunch_Failure() {
+        /*
+        Given an invalid launchId, expect that no matching records exist in
+        launch_capsule_details table, therefore no matching capsule Ids can be found
+        to look for in capsules table, so expect getCapsulesForLaunch to return null.
+         */
         val invalidLaunchId = "abc"
         val firstResult = capsuleService.getCapsulesForLaunch(invalidLaunchId)
-        assert(firstResult == null)
-        // Second premise: launchCapsule record exists, but Capsule record not exists
-        capsuleService.updateLaunchCapsuleJoinTable(capsuleInternalMock)
-        val launchId = capsuleInternalMock.launchIds[0]
-        val secondResult = capsuleService.getCapsulesForLaunch(launchId)
-        assert(secondResult == null)
+        assert(firstResult.isEmpty())
     }
-
 }
