@@ -1,16 +1,17 @@
 package com.kg.spacex.controllers
 
-import com.kg.spacex.models.Launchpad
 import com.kg.spacex.models.capsule.CapsuleExternal
+import com.kg.spacex.models.capsule.CapsuleInternal
 import com.kg.spacex.models.launch.LaunchExternal
-import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.services.*
+import com.kg.spacex.utils.ErrorMessage
+import com.kg.spacex.utils.ResourceNotFoundException
+import com.kg.spacex.utils.ResourceUnavailableException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.client.HttpClientErrorException
+import java.util.logging.Logger
 
 /**
  * @property spaceXAPIService exists for testing, so that an instance of SpaceXController
@@ -26,65 +27,120 @@ class SpaceXController (
     private val payloadService: PayloadService
 ) {
 
+    val logger: Logger = Logger.getLogger("logger")
+
+    // TODO can this be removed since I'm using try/catch blocks?
+    @ExceptionHandler(HttpClientErrorException.NotFound::class)
+    fun handleNotFound(e: HttpClientErrorException.NotFound): ResponseEntity<String> =
+        ResponseEntity(e.message, HttpStatus.NOT_FOUND)
+
     @GetMapping("/")
-    fun index(): ResponseEntity<List<LaunchExternal>> {
-        val dataRefreshNeeded = launchService.isDataRefreshNeeded()
-        if (dataRefreshNeeded) {
-            launchService.fetchAllData() ?: return ResponseEntity(HttpStatus.NOT_FOUND)
+    fun index(): Any {
+        return try {
+            launchService.getAllLaunchExternalsFromDb()
+        } catch (exception: ResourceNotFoundException) {
+            val errorMessage = ErrorMessage(status = 404, "Unable to retrieve launches from database")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
         }
-        val launches = launchService.getAllLaunchesFromDb()
-        return if (launches == null) {
-            ResponseEntity(HttpStatus.NOT_FOUND)
-        } else {
-            ResponseEntity(launches, HttpStatus.OK)
-        }
+//        val dataRefreshNeeded = launchService.isDataRefreshNeeded()
+//        if (dataRefreshNeeded) {
+//            launchService.refreshAllData() ?: return ResponseEntity(HttpStatus.NOT_FOUND)
+//        }
+//        val launches = launchService.getAllLaunchExternalsFromDb()
+//        return if (launches == null) {
+//            ResponseEntity(HttpStatus.NOT_FOUND)
+//        } else {
+//            ResponseEntity(launches, HttpStatus.OK)
+//        }
     }
 
-    @GetMapping("/{launchId}")
-    fun getOneLaunchFromDb(
-        @PathVariable("launchId") launchId: String
-    ): ResponseEntity<LaunchExternal> {
-        val launch = launchService.getLaunchExternalFromDbById(launchId)
-        return if (launch == null) {
-            ResponseEntity(HttpStatus.NOT_FOUND)
-        } else {
-            ResponseEntity(launch, HttpStatus.OK)
+    @GetMapping("/launches/{id}")
+    fun getLaunchFromDb(
+        @PathVariable id: String
+    ): Any {
+        return try {
+            launchService.buildLaunchExternalById(id)
+        } catch (exception: ResourceNotFoundException) {
+            val errorMessage = ErrorMessage(status = 404, "Could not find that id in database")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
         }
+//        val launch = launchService.buildLaunchExternalById(launchId)
+//        return if (launch == null) {
+//            ResponseEntity(HttpStatus.NOT_FOUND)
+//        } else {
+//            ResponseEntity(launch, HttpStatus.OK)
+//        }
     }
 
     @GetMapping("/capsules/{id}")
-    fun getOneCapsuleFromDb(
-        @PathVariable("id") capsuleId: String
-    ): ResponseEntity<CapsuleExternal> {
-        val capsule = capsuleService.getCapsulesById(listOf(capsuleId))
-        return if (capsule == null) {
-            ResponseEntity(HttpStatus.NOT_FOUND)
-        } else {
-            ResponseEntity(capsule[0], HttpStatus.OK)
+    fun getCapsuleFromDb(
+        @PathVariable("id") id: String
+    ): Any {
+        return try {
+            capsuleService.getByIds(listOf(id))[0]
+        } catch (exception: ResourceNotFoundException) {
+            val errorMessage = ErrorMessage(status = 404, "Could not find that id in database")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
         }
     }
 
     @GetMapping("/payloads/{id}")
-    fun getOnePayloadFromDb(
+    fun getPayloadFromDb(
         @PathVariable("id") payloadId: String
-    ): ResponseEntity<PayloadExternal> {
-        val payload = payloadService.getPayloadByID(payloadId)
-        return if (payload == null) {
-            ResponseEntity(HttpStatus.NOT_FOUND)
-        } else {
-            ResponseEntity(payload, HttpStatus.OK)
+    ): Any {
+        return try {
+            payloadService.getById(payloadId)
+        } catch (exception: ResourceNotFoundException) {
+            val errorMessage = ErrorMessage(status = 404, "Could not find that id in database")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
         }
     }
 
-    @GetMapping("/launchpad/{id}")
-    fun getOneLaunchpadFromDb(
+    @GetMapping("/launchpads/{id}")
+    fun getLaunchpadFromDb(
         @PathVariable("id") launchpadId: String
-    ): ResponseEntity<Launchpad> {
-        val launchpad = launchpadService.getLaunchpadById(launchpadId)
-        return if (launchpad == null) {
-            ResponseEntity(HttpStatus.NOT_FOUND)
-        } else {
-            ResponseEntity(launchpad, HttpStatus.OK)
+    ): Any {
+        return try {
+            launchpadService.getById(launchpadId)
+        } catch (exception: ResourceNotFoundException) {
+            val errorMessage = ErrorMessage(status = 404, "Could not find that id in database")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
         }
+    }
+
+    @GetMapping("launchpad/test/{id}")
+    fun getLaunchpadFromAPI(
+        @PathVariable("id") id: String
+    ): Any {
+        return try {
+            launchpadService.fetchOne(id)
+        } catch (exception: ResourceUnavailableException) {
+            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @GetMapping("launchpad/test")
+    fun getLaunchpadsFromAPI(): Any {
+        return try {
+            launchpadService.fetchAll()
+        } catch (exception: ResourceUnavailableException) {
+            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @PostMapping("capsule/new")
+    fun add(
+        @RequestBody capsule: CapsuleInternal
+    ) {
+        capsuleService.saveOrUpdate(listOf(capsule))
+    }
+
+    @GetMapping("capsule/getByLaunch/{id}")
+    fun getCapsuleByLaunchId(
+        @PathVariable id: String
+    ): List<CapsuleExternal> {
+        return capsuleService.getCapsulesForLaunch(id)
     }
 }

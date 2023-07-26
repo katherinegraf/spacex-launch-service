@@ -4,80 +4,61 @@ import com.kg.spacex.models.payload.PayloadInternal
 import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.repos.LaunchRepository
 import com.kg.spacex.repos.PayloadRepository
+import com.kg.spacex.utils.ResourceNotFoundException
+import com.kg.spacex.utils.ResourceUnavailableException
 import com.kg.spacex.utils.SPACEX_API_PAYLOADS_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 @Service
-class PayloadService(
-    private val spaceXAPIService: SpaceXAPIService
-) {
+class PayloadService(private val spaceXAPIService: SpaceXAPIService) {
+
     @Autowired
     private lateinit var db: PayloadRepository
     @Autowired
     private lateinit var launchRepo: LaunchRepository
 
-    fun fetchOnePayload(
+    fun fetchOne(
         payloadId: String
-    ): Boolean {
-        val result = makeAPICall(payloadId) as PayloadInternal?
-        return result !=null
+    ): PayloadInternal {
+        val result = spaceXAPIService.handleAPICall(
+            url = SPACEX_API_PAYLOADS_URL.plus(payloadId),
+            deserializer = PayloadInternal.Deserializer()
+        ) as PayloadInternal?
+        return result ?: throw ResourceUnavailableException()
     }
 
-    fun fetchAllPayloads(): List<PayloadInternal>? {
-        val resultList = makeAPICall(null) as Array<*>? ?: return null
+    fun fetchAll(): List<PayloadInternal> {
         val payloads = mutableListOf<PayloadInternal>()
-        resultList.forEach { result ->
-            result as PayloadInternal
-            payloads.add(result)
-        }
+        val resultList = spaceXAPIService.handleAPICall(
+            url = SPACEX_API_PAYLOADS_URL,
+            deserializer = PayloadInternal.ArrayDeserializer()
+        ) as Array<*>? ?: throw ResourceUnavailableException()
+        resultList.forEach { payloads.add(it as PayloadInternal) }
         return payloads
     }
 
-    fun makeAPICall(
-        payloadId: String?
-    ): Any? {
-        return if (payloadId != null) {
-            spaceXAPIService.handleAPICall(
-                url = SPACEX_API_PAYLOADS_URL.plus(payloadId),
-                deserializer = PayloadInternal.Deserializer()
-            )
-        } else {
-            spaceXAPIService.handleAPICall(
-                url = SPACEX_API_PAYLOADS_URL,
-                deserializer = PayloadInternal.ArrayDeserializer()
-            )
-        }
-    }
-
-    fun updateOrSavePayloads(
+    /**
+     * Will save a payload only if its associated launch's data has been saved from launches API endpoint,
+     * since not all launch data is available via API.
+     */
+    fun saveOrUpdate(
         payloads: List<PayloadInternal>
     ) {
         payloads.forEach { payload ->
-            val payloadExternal = prepareToSavePayload(payload)
-            val foundPayload = db.findByIdOrNull(payload.id)
-            if (foundPayload != null) {
-                foundPayload.name = payloadExternal.name
-                foundPayload.type = payloadExternal.type
-                foundPayload.regime = payloadExternal.regime
-                foundPayload.customers = payloadExternal.customers
-                foundPayload.nationalities = payloadExternal.nationalities
-                foundPayload.manufacturers = payloadExternal.manufacturers
-                foundPayload.mass_kg = payloadExternal.mass_kg
-                foundPayload.mass_lbs = payloadExternal.mass_lbs
-                db.save(foundPayload)
-            } else {
-                // Payload is only saved if its associated launch's data is provided via launches API endpoint
-                val foundLaunch = launchRepo.findByIdOrNull(payloadExternal.launchId)
-                if (foundLaunch != null) {
-                    db.save(payloadExternal)
-                }
-            }
+            val payloadExternal = convertToExternal(payload)
+            val foundLaunch = launchRepo.findByIdOrNull(payloadExternal.launchId)
+            if (foundLaunch != null) db.save(payloadExternal)
         }
     }
 
-    fun prepareToSavePayload(
+    /**
+     * Converts PayloadInternal to PayloadExternal by transforming the attributes customers, nationalities, and
+     * manufacturers from List<String> to comma-separated Strings, in order to simplify database architecture.
+     * The values in these attributes are never accessed otherwise, so lost flexibility is not a concern.
+     */
+    fun convertToExternal(
         payload: PayloadInternal
     ): PayloadExternal {
         return PayloadExternal(
@@ -94,13 +75,13 @@ class PayloadService(
         )
     }
 
-    fun getPayloadByID(
+    fun getById(
         payloadId: String
-    ): PayloadExternal? {
-        return db.findByIdOrNull(payloadId)
+    ): PayloadExternal {
+        return db.findByIdOrNull(payloadId) ?: throw ResourceNotFoundException()
     }
 
-    fun getPayloadsByLaunchId(
+    fun getByLaunchId(
         launchId: String
     ): List<PayloadExternal> {
         val payloads = mutableListOf<PayloadExternal>()
@@ -109,7 +90,7 @@ class PayloadService(
             emptyList()
         } else {
             foundPayloads.forEach { foundPayload -> payloads.add(foundPayload) }
-            return payloads
+            payloads
         }
     }
 }

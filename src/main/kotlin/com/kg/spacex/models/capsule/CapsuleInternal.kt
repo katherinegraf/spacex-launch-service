@@ -8,10 +8,10 @@ class CapsuleInternal (
     val id: String,
     val serial: String,
     val type: String,
-    var status: String,
-    var last_update: String?,
-    var water_landings: Long? = 0,
-    var land_landings: Long? = 0,
+    val status: String,
+    val last_update: String?,
+    val water_landings: Long? = 0,
+    val land_landings: Long? = 0,
 
     @SerializedName(value = "launches")
     val launchIds: List<String>

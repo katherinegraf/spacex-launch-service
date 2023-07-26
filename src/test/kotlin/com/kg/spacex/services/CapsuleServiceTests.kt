@@ -1,111 +1,177 @@
 package com.kg.spacex.services
 
 import com.kg.spacex.mocks.*
+import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.capsule.CapsuleInternal
 import com.kg.spacex.repos.CapsuleRepository
+import com.kg.spacex.repos.LaunchCapsuleRepository
+import com.kg.spacex.utils.ResourceNotFoundException
+import com.kg.spacex.utils.ResourceUnavailableException
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.repository.findByIdOrNull
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 @SpringBootTest
 @AutoConfigureTestDatabase
 class CapsuleServiceTests {
 
-    @Autowired
-    private lateinit var capsuleService: CapsuleService
-    @Autowired
-    private lateinit var capsuleRepo: CapsuleRepository
+    private val mockkApiService = mockk<SpaceXAPIService>()
+    private val mockService = CapsuleService(mockkApiService)
 
-    private val apiServiceMock = mockk<SpaceXAPIService>()
-    private val capsuleServiceMock = CapsuleService(apiServiceMock)
+    @Nested
+    @DisplayName("API Operations")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class FetchFromAPI @Autowired constructor (private val service: CapsuleService) {
 
-    @Test
-    fun fetchOneCapsule_Success() {
-        every {
-            apiServiceMock.handleAPICall(any(), any())
-        } answers { capsuleInternalMock }
-        val result = capsuleServiceMock.fetchOneCapsule(capsuleInternalMock.id)
-        verify { apiServiceMock.handleAPICall(any(), any()) }
-        assert(result)
-    }
+        @Test
+        fun `should return matching capsule when calling API for a valid capsule id`() {
+            // given
+            every {
+                mockkApiService.handleAPICall(any(), any())
+            } answers { capsuleInternalMock }
 
-    @Test
-    fun fetchOneCapsule_Failure() {
-        /*
-        1. Given invalid id, expect fetch to return null
-        2. Given API call behavior mocked to return null, expect fetch to return null
-         */
-        val capsuleId = "abc"
-        val firstResult = capsuleService.fetchOneCapsule(capsuleId)
-        assert(!firstResult)
-        every {
-            apiServiceMock.handleAPICall(any(), any())
-        } answers { nothing }
-        val secondResult = capsuleServiceMock.fetchOneCapsule(capsuleInternalMock.id)
-        verify { apiServiceMock.handleAPICall(any(), any()) }
-        assert(!secondResult)
-    }
+            // when
+            val result = mockService.fetchOne(capsuleInternalMock.id)
 
-    @Test
-    fun makeAPICall_Success() {
-        val capsuleId = capsuleInternalMock.id
-        val expectedSerial = capsuleInternalMock.serial
-        val firstResult = capsuleService.makeAPICall(capsuleId) as CapsuleInternal?
-        assert(firstResult?.serial == expectedSerial)
-        val secondResult = capsuleService.makeAPICall(null) as Array<*>
-        val secondResultIds = mutableListOf<String>()
-        secondResult.forEach { result ->
-            result as CapsuleInternal
-            secondResultIds.add(result.id)
+            // then
+            verify { mockkApiService.handleAPICall(any(), any()) }
+            assert(result.serial == capsuleInternalMock.serial)
         }
-        assert(capsuleId in secondResultIds)
+
+        @Test
+        fun `should return list of CapsuleInternals if API call is successful`() {
+            // given
+            val resultSerials = mutableListOf<String>()
+
+            // when
+            val result = service.fetchAll()
+            result.forEach { resultSerials.add(it.serial) }
+
+            // then
+            assertIs<List<CapsuleInternal>>(result)
+            assert(capsuleInternalMock.serial in resultSerials)
+        }
+
+        @Test
+        fun `should throw ResourceUnavailableException when API call returns null`() {
+            // given
+            every {
+                mockkApiService.handleAPICall(any(), any())
+            } answers { nothing }
+
+            // when / then
+            assertThrows<ResourceUnavailableException> { mockService.fetchOne("id") }
+            assertThrows<ResourceUnavailableException> { mockService.fetchAll() }
+            verify(exactly = 2) { mockkApiService.handleAPICall(any(), any()) }
+        }
     }
 
-    @Test
-    fun makeAPICall_Failure() {
-        /*
-        1. Given invalid id, expect makeAPICall to return null
-        2. Given API call behavior mocked to return null, expect makeAPICall to return null
-        */
-        val capsuleId = "abc"
-        val firstResult = capsuleService.makeAPICall(capsuleId)
-        assert(firstResult == null)
-        every {
-            apiServiceMock.handleAPICall(any(), any())
-        } answers { nothing }
-        val secondResult = capsuleServiceMock.makeAPICall(null)
-        verify { apiServiceMock.handleAPICall(any(), any()) }
-        assert(secondResult == null)
-    }
+    @Nested
+    @DisplayName("Db Operations")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class DbOps @Autowired constructor (
+        private val service: CapsuleService,
+        private val db: CapsuleRepository,
+        private val joinDb: LaunchCapsuleRepository
+    ) {
 
-    @Test
-    fun saveAndUpdateCapsules_Success() {
-        val capsules = listOf(capsuleInternalMock)
-        capsuleService.updateOrSaveCapsules(capsules)
-        val firstResult = capsuleRepo.findByIdOrNull(capsuleInternalMock.id)
-        var expectedLastUpdate = capsuleInternalMock.last_update
-        assert(firstResult != null)
-        assert(firstResult?.last_update == expectedLastUpdate)
-        capsuleService.updateOrSaveCapsules(listOf(capsuleInternalMockEdited))
-        expectedLastUpdate = capsuleInternalMockEdited.last_update
-        val secondResult = capsuleRepo.findByIdOrNull(capsuleInternalMockEdited.id)
-        assert(secondResult?.last_update == expectedLastUpdate)
-    }
+        @AfterEach
+        fun tearDown() {
+            db.deleteAll()
+            joinDb.deleteAll()
+        }
 
-    @Test
-    fun getCapsulesForLaunch_Failure() {
-        /*
-        Given an invalid launchId, expect that no matching records exist in
-        launch_capsule_details table, therefore no matching capsule Ids can be found
-        to look for in capsules table, so expect getCapsulesForLaunch to return null.
-         */
-        val invalidLaunchId = "abc"
-        val firstResult = capsuleService.getCapsulesForLaunch(invalidLaunchId)
-        assert(firstResult.isEmpty())
+        @Test
+        fun `should save new capsule`() {
+            // given
+            assertNull(db.findByIdOrNull(capsuleInternalMock.id))
+
+            // when
+            service.saveOrUpdate(listOf(capsuleInternalMock))
+
+            // then
+            val queriedResult = db.findByIdOrNull(capsuleInternalMock.id)
+            assertNotNull(queriedResult)
+            assert(queriedResult.serial == capsuleInternalMock.serial)
+        }
+
+        @Test
+        fun `should update capsule record if already exists`() {
+            // given
+            service.saveOrUpdate(listOf(capsuleInternalMock))
+            val capsule = db.findByIdOrNull(capsuleInternalMock.id)
+            assertNotNull(capsule)
+            val originalWaterLandingsCount = capsule.water_landings
+
+            // when
+            service.saveOrUpdate(listOf(capsuleInternalMockEdited))
+
+            // then
+            val queriedResult = db.findByIdOrNull(capsuleInternalMock.id)
+            assertNotNull(queriedResult)
+            assert(queriedResult.water_landings != originalWaterLandingsCount)
+            assert(queriedResult.water_landings == capsuleInternalMockEdited.water_landings)
+        }
+
+        @Test
+        fun `should not create duplicate launch-capsule association record in join table`() {
+            // given
+            service.updateLaunchCapsuleJoinTable(capsuleInternalMock)
+            assert(joinDb.findAllByLaunchId(capsuleInternalMock.launchIds[0]).isNotEmpty())
+
+            // when
+            service.updateLaunchCapsuleJoinTable(capsuleInternalMock)
+
+            // then
+            val queriedResult = joinDb.findAllByLaunchId(capsuleInternalMock.launchIds[0])
+            assert(queriedResult.size == 1)
+        }
+
+        @Test
+        fun `should throw ResourceNotFoundException when db record not exists`() {
+            // given
+            val invalidId = "invalidId"
+
+            // when / then
+            assertThrows<ResourceNotFoundException> { service.getByIds(listOf(invalidId)) }
+        }
+
+        @Test
+        fun `should return list of CapsuleExternals given valid launch id and existing LaunchCapsule record`() {
+            // given
+            service.saveOrUpdate(listOf(capsuleInternalMock))
+            assert(joinDb.findAllByLaunchId(capsuleInternalMock.launchIds[0]).isNotEmpty())
+
+            // when
+            val result = service.getCapsulesForLaunch(launchInternalMock.id)
+
+            // then
+            assertIs<List<CapsuleExternal>>(result)
+            assert(result[0].serial == capsuleExternalMock.serial)
+        }
+
+        @Test
+        fun `should return empty list given invalid launch id or LaunchCapsule not exists`() {
+            // given
+            val invalidId = "invalidId"
+            val validId = launchInternalMock.id
+            assert(joinDb.findAllByLaunchId(capsuleInternalMock.launchIds[0]).isEmpty())
+
+            // when
+            val firstResult = service.getCapsulesForLaunch(invalidId)
+            val secondResult = service.getCapsulesForLaunch(validId)
+
+            // then
+            assert(firstResult.isEmpty())
+            assert(secondResult.isEmpty())
+        }
     }
 }

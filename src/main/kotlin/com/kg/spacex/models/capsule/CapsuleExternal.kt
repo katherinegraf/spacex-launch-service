@@ -19,15 +19,14 @@ class CapsuleExternal (
     val type: String,
 
     @Column
-    var status: String,
+    val status: String,
 
     @Column
-    var last_update: String?,
+    val last_update: String?,
 
     @Column(nullable = true)
-    var water_landings: Long? = 0,
+    val water_landings: Long? = 0,
 
     @Column(nullable = true)
-    var land_landings: Long? = 0,
-
+    val land_landings: Long? = 0,
 )

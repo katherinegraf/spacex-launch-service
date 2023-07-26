@@ -2,6 +2,8 @@ package com.kg.spacex.services
 
 import com.kg.spacex.models.Launchpad
 import com.kg.spacex.repos.LaunchpadRepository
+import com.kg.spacex.utils.ResourceNotFoundException
+import com.kg.spacex.utils.ResourceUnavailableException
 import com.kg.spacex.utils.SPACEX_API_LAUNCHPADS_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
@@ -13,59 +15,35 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
     @Autowired
     private lateinit var db: LaunchpadRepository
 
-    fun fetchOneLaunchpad(
-        launchpadId: String
-    ): Boolean {
-        val result = makeAPICall(launchpadId) as Launchpad?
-        return result != null
+    fun fetchOne(
+        id: String
+    ): Launchpad {
+        val result = spaceXAPIService.handleAPICall(
+            SPACEX_API_LAUNCHPADS_URL.plus(id),
+            Launchpad.Deserializer()
+        ) as Launchpad?
+        return result ?: throw ResourceUnavailableException()
     }
 
-    fun fetchAllLaunchpads(): List<Launchpad>? {
-        val resultList = makeAPICall(null) as Array<*>? ?: return null
+    fun fetchAll(): List<Launchpad> {
         val launchpads = mutableListOf<Launchpad>()
-        resultList.forEach { result ->
-            result as Launchpad
-            launchpads.add(result)
-        }
+        val resultList = spaceXAPIService.handleAPICall(
+            url = SPACEX_API_LAUNCHPADS_URL,
+            deserializer = Launchpad.ArrayDeserializer()
+        ) as Array<*>? ?: throw ResourceUnavailableException()
+        resultList.forEach { launchpads.add(it as Launchpad) }
         return launchpads
     }
 
-    fun makeAPICall(
-        launchpadID: String?
-    ): Any? {
-        return if (launchpadID != null) {
-            spaceXAPIService.handleAPICall(
-                url = SPACEX_API_LAUNCHPADS_URL.plus(launchpadID),
-                deserializer = Launchpad.Deserializer()
-            )
-        } else {
-            spaceXAPIService.handleAPICall(
-                url = SPACEX_API_LAUNCHPADS_URL,
-                deserializer = Launchpad.ArrayDeserializer()
-            )
-        }
-    }
-
-    fun updateOrSaveLaunchpads(
+    fun saveOrUpdate(
         launchpads: List<Launchpad>
     ) {
-        launchpads.forEach { launchpad ->
-            val foundLaunchpad = db.findByIdOrNull(launchpad.id)
-            if (foundLaunchpad != null) {
-                foundLaunchpad.status = launchpad.status
-                foundLaunchpad.details = launchpad.details
-                foundLaunchpad.launch_attempts = launchpad.launch_attempts
-                foundLaunchpad.launch_successes = launchpad.launch_successes
-                db.save(foundLaunchpad)
-            } else {
-                db.save(launchpad)
-            }
-        }
+        launchpads.forEach { db.save(it) }
     }
 
-    fun getLaunchpadById(
+    fun getById(
         launchpadId: String
-    ): Launchpad? {
-        return db.findByIdOrNull(launchpadId)
+    ): Launchpad {
+        return db.findByIdOrNull(launchpadId) ?: throw ResourceNotFoundException()
     }
 }

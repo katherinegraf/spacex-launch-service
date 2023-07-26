@@ -5,6 +5,7 @@ import com.kg.spacex.models.Launchpad
 import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
+import com.kg.spacex.models.launch.failure.FailureInternal
 import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.models.payload.PayloadInternal
 import java.time.LocalDate
@@ -29,14 +30,14 @@ val launchpadMockEdited: Launchpad = Launchpad(
     locality = launchpadMock.locality,
     region = launchpadMock.region,
     status = launchpadMock.status,
-    details = "abcdefg",
-    launch_attempts = launchpadMock.launch_attempts,
-    launch_successes = launchpadMock.launch_successes
+    details = launchpadMock.details,
+    launch_attempts = 0,
+    launch_successes = 0
 )
 
 val payloadInternalMock: PayloadInternal = PayloadInternal(
-    id = "5eb0e4bbb6c3bb0006eeb1ed",
-    name = "CRS-2",
+    id = "5eb0e4bab6c3bb0006eeb1ea",
+    name = "COTS Demo Flight 2",
     type = "Dragon 1.0",
     regime = "low-earth",
     launchId = "5eb87cdfffd86e000604b331",
@@ -49,20 +50,20 @@ val payloadInternalMock: PayloadInternal = PayloadInternal(
 
 val payloadInternalMockEdited: PayloadInternal = PayloadInternal(
     id = payloadInternalMock.id,
-    name = "abcdefg",
+    name = payloadInternalMock.name,
     type = payloadInternalMock.type,
     regime = payloadInternalMock.regime,
     launchId = payloadInternalMock.launchId,
     customers = payloadInternalMock.customers,
     nationalities = payloadInternalMock.nationalities,
     manufacturers = payloadInternalMock.manufacturers,
-    mass_kg = payloadInternalMock.mass_kg,
-    mass_lbs = payloadInternalMock.mass_lbs
+    mass_kg = 0f,
+    mass_lbs = 0f
 )
 
 val payloadExternalMock: PayloadExternal = PayloadExternal(
     id = payloadInternalMock.id,
-    name = "abcdefg",
+    name = payloadInternalMock.name,
     type = payloadInternalMock.type,
     regime = payloadInternalMock.regime,
     launchId = payloadInternalMock.launchId,
@@ -74,11 +75,24 @@ val payloadExternalMock: PayloadExternal = PayloadExternal(
 )
 
 val payloadMockInvalidLaunchId: PayloadInternal = PayloadInternal(
-    id = "123",
+    id = "invalidId",
     name = payloadInternalMock.name,
     type = payloadInternalMock.type,
     regime = payloadInternalMock.regime,
-    launchId = "abcdefg",
+    launchId = "invalidLaunchId",
+    customers = payloadInternalMock.customers,
+    nationalities = payloadInternalMock.nationalities,
+    manufacturers = payloadInternalMock.manufacturers,
+    mass_kg = payloadInternalMock.mass_kg,
+    mass_lbs = payloadInternalMock.mass_lbs
+)
+
+val payloadMockWithUnsavedLaunch: PayloadInternal = PayloadInternal(
+    id = "id",
+    name = payloadInternalMock.name,
+    type = payloadInternalMock.type,
+    regime = payloadInternalMock.regime,
+    launchId = "someOtherId",
     customers = payloadInternalMock.customers,
     nationalities = payloadInternalMock.nationalities,
     manufacturers = payloadInternalMock.manufacturers,
@@ -87,14 +101,14 @@ val payloadMockInvalidLaunchId: PayloadInternal = PayloadInternal(
 )
 
 val capsuleInternalMock: CapsuleInternal = CapsuleInternal(
-    id = "5e9e2c5bf359189ef23b2667",
-    serial = "C104",
+    id = "5e9e2c5bf3591882af3b2665",
+    serial = "C102",
     type = "Dragon 1.0",
-    status = "unknown",
-    last_update = "Location and status unknown",
+    status = "retired",
+    last_update = "On display at KSC Visitor's Center ",
     water_landings = 1,
     land_landings = 0,
-    launchIds = listOf("5eb87ce1ffd86e000604b333")
+    launchIds = listOf("5eb87cdfffd86e000604b331")
 )
 
 val capsuleInternalMockEdited: CapsuleInternal = CapsuleInternal(
@@ -102,8 +116,8 @@ val capsuleInternalMockEdited: CapsuleInternal = CapsuleInternal(
     serial = capsuleInternalMock.serial,
     type = capsuleInternalMock.type,
     status = capsuleInternalMock.status,
-    last_update = "abcdefg",
-    water_landings = capsuleInternalMock.water_landings,
+    last_update = capsuleInternalMock.last_update,
+    water_landings = 99999,
     land_landings = capsuleInternalMock.land_landings,
     launchIds = capsuleInternalMock.launchIds
 )
@@ -118,16 +132,34 @@ val capsuleExternalMock: CapsuleExternal = CapsuleExternal(
     land_landings = capsuleInternalMock.land_landings,
 )
 
+val failureMock: FailureInternal = FailureInternal(
+    time = 99,
+    altitude = 99,
+    reason = "example failure"
+)
+
 val launchInternalMock: LaunchInternal = LaunchInternal(
     name = "COTS 2",
     details = "Launch was scrubbed on first attempt, second launch attempt was successful",
     date_utc = "2012-05-22T07:44:00.000Z",
     success = true,
-    failures = emptyList(),
+    failures = listOf(failureMock),
     id = "5eb87cdfffd86e000604b331",
-    launchpadId = "5e9e4501f509094ba4566f84",
-    payloadIds = listOf("5eb0e4bab6c3bb0006eeb1ea"),
-    capsuleIds = listOf("5e9e2c5bf3591882af3b2665")
+    launchpadId = launchpadMock.id,
+    payloadIds = listOf(payloadInternalMock.id),
+    capsuleIds = listOf(capsuleInternalMock.id)
+)
+
+val launchInternalMockEdited: LaunchInternal = LaunchInternal(
+    name = launchInternalMock.name,
+    details = launchInternalMock.details,
+    date_utc = launchInternalMock.date_utc,
+    success = false,
+    failures = launchInternalMock.failures,
+    id = launchInternalMock.id,
+    launchpadId = launchInternalMock.launchpadId,
+    payloadIds = launchInternalMock.payloadIds,
+    capsuleIds = launchInternalMock.capsuleIds
 )
 
 val launchExternalMock: LaunchExternal = LaunchExternal(
@@ -141,4 +173,17 @@ val launchExternalMock: LaunchExternal = LaunchExternal(
     payloads = listOf(payloadExternalMock),
     capsules = listOf(capsuleExternalMock),
     updated_at = LocalDate.now()
+)
+
+val launchMockFromJanuary2023: LaunchExternal = LaunchExternal(
+    name = launchInternalMock.name,
+    details = launchInternalMock.details,
+    date_utc = launchInternalMock.date_utc,
+    success = launchInternalMock.success,
+    failures = emptyList(),
+    id = launchInternalMock.id,
+    launchpad = launchpadMock,
+    payloads = listOf(payloadExternalMock),
+    capsules = listOf(capsuleExternalMock),
+    updated_at = LocalDate.ofYearDay(2023, 1)
 )

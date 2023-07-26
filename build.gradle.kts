@@ -33,6 +33,7 @@ dependencies {
 	implementation ("com.github.kittinunf.fuel:fuel:2.3.1")
 	implementation ("com.google.code.gson:gson:2.10.1")
 	testImplementation("com.h2database:h2")
+	testImplementation(kotlin("test"))
 
 }
 
