@@ -10,5 +10,4 @@ interface LaunchCapsuleRepository : JpaRepository<LaunchCapsule, String> {
     fun findByLaunchIdAndCapsuleId(launchId: String, capsuleId: String): LaunchCapsule?
 
     fun findAllByLaunchId(launchId: String): List<LaunchCapsule>
-
 }

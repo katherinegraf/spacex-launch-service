@@ -12,7 +12,9 @@ class FailureService() {
     @Autowired
     private lateinit var db: FailureRepository
 
-    fun externalizeFailure(
+    // TODO refactor for cleanup
+
+    fun convertToExternal(
         failures: List<FailureInternal>,
         launchId: String
     ): List<FailureExternal> {
@@ -29,22 +31,13 @@ class FailureService() {
         return failureExternals
     }
 
-    fun updateOrSaveFailures(
+    fun saveOrUpdate(
         failures: List<FailureExternal>
     ) {
-        failures.forEach { failure ->
-            val foundFailure = db.findByLaunchId(failure.launchId)
-            if (foundFailure != null) {
-                foundFailure.time = failure.time
-                foundFailure.altitude = failure.altitude
-                foundFailure.reason = failure.reason
-            } else {
-                db.save(failure)
-            }
-        }
+        failures.forEach { db.save(it) }
     }
 
-    fun getFailuresById(
+    fun getById(
         launchId: String
     ): List<FailureExternal> {
         return db.findAllByLaunchId(launchId)

@@ -21,16 +21,16 @@ class Launchpad (
     val region: String,
 
     @Column
-    var status: String,
+    val status: String,
 
     @Column
-    var details: String,
+    val details: String,
 
     @Column
-    var launch_attempts: Long,
+    val launch_attempts: Long,
 
     @Column
-    var launch_successes: Long,
+    val launch_successes: Long,
 ) {
     class Deserializer : ResponseDeserializable<Launchpad> {
         override fun deserialize(content: String): Launchpad =

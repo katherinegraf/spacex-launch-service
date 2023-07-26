@@ -4,89 +4,127 @@ import com.kg.spacex.mocks.launchpadMock
 import com.kg.spacex.mocks.launchpadMockEdited
 import com.kg.spacex.models.Launchpad
 import com.kg.spacex.repos.LaunchpadRepository
+import com.kg.spacex.utils.ResourceNotFoundException
+import com.kg.spacex.utils.ResourceUnavailableException
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.repository.findByIdOrNull
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 @SpringBootTest
 @AutoConfigureTestDatabase
 class LaunchpadServiceTests {
 
-    @Autowired
-    private lateinit var launchpadService: LaunchpadService
+    private val mockkApiService = mockk<SpaceXAPIService>()
+    val mockService = LaunchpadService(mockkApiService)
 
-    @Autowired
-    private lateinit var launchpadRepo: LaunchpadRepository
+    @Nested
+    @DisplayName("API Operations")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class FetchFromAPI @Autowired constructor (private val service: LaunchpadService) {
 
-    private val apiServiceMock = mockk<SpaceXAPIService>()
-    private val launchpadServiceMock = LaunchpadService(apiServiceMock)
+        @Test
+        fun `should return matching launchpad when calling API for a valid launchpad id`() {
+            // given
+            every {
+                mockkApiService.handleAPICall(any(), any())
+            } answers { launchpadMock }
 
-    @Test
-    fun fetchOneLaunchpadSuccess() {
-        every {
-            apiServiceMock.handleAPICall(any(), any())
-        } answers { launchpadMock }
-        val result = launchpadServiceMock.fetchOneLaunchpad(launchpadMock.id)
-        verify { apiServiceMock.handleAPICall(any(), any()) }
-        assert(result)
-    }
+            // when
+            val result = mockService.fetchOne(launchpadMock.id)
 
-    @Test
-    fun fetchOneLaunchpadFailures() {
-        val id = "abc"
-        val firstResult = launchpadService.fetchOneLaunchpad(id)
-        assert(!firstResult)
-        every {
-            apiServiceMock.handleAPICall(any(), any())
-        } answers { nothing }
-        val secondResult = launchpadServiceMock.fetchOneLaunchpad(launchpadMock.id)
-        verify { apiServiceMock.handleAPICall(any(), any()) }
-        assert(!secondResult)
-    }
-
-    @Test
-    fun makeAPICallSuccess() {
-        val launchpadId = launchpadMock.id
-        val expectedFullName = launchpadMock.full_name
-        val firstResult = launchpadService.makeAPICall(launchpadId) as Launchpad?
-        assert(firstResult?.full_name == expectedFullName)
-        val secondResult = launchpadService.makeAPICall(null) as Array<*>?
-        val secondResultIds = mutableListOf<String>()
-        secondResult?.forEach { result ->
-            result as Launchpad
-            secondResultIds.add(result.id)
+            // then
+            verify { mockkApiService.handleAPICall(any(), any()) }
+            assert(result.locality == launchpadMock.locality)
         }
-        assert(launchpadId in secondResultIds)
+
+        @Test
+        fun `should return list of Launchpads if API call is successful`() {
+            // given
+            val resultLocalities = mutableListOf<String>()
+
+            // when
+            val result = service.fetchAll()
+            result.forEach { resultLocalities.add(it.locality) }
+
+            // then
+            assertIs<List<Launchpad>>(result)
+            assert(launchpadMock.locality in resultLocalities)
+        }
+
+        @Test
+        fun `should throw ResourceUnavailableException when API call returns null`() {
+            // given
+            every {
+                mockkApiService.handleAPICall(any(), any())
+            } answers { nothing }
+
+            // when / then
+            assertThrows<ResourceUnavailableException> { mockService.fetchOne("id") }
+            assertThrows<ResourceUnavailableException> { mockService.fetchAll() }
+            verify(exactly = 2) { mockkApiService.handleAPICall(any(), any()) }
+        }
     }
 
-    @Test
-    fun makeAPICallFailures() {
-        val launchpadId = "abc"
-        val firstResult = launchpadService.makeAPICall(launchpadId)
-        assert(firstResult == null)
-        every {
-            apiServiceMock.handleAPICall(any(), any())
-        } answers { nothing }
-        val secondResult = launchpadServiceMock.makeAPICall(null)
-        verify { apiServiceMock.handleAPICall(any(), any()) }
-        assert(secondResult == null)
-    }
+    @Nested
+    @DisplayName("Db Operations")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class DbOps @Autowired constructor (
+        private val service: LaunchpadService,
+        private val db: LaunchpadRepository
+    ) {
 
-    @Test
-    fun saveAndUpdateLaunchpadsTest() {
-        val launchpads = listOf(launchpadMock)
-        launchpadService.updateOrSaveLaunchpads(launchpads)
-        val firstResult = launchpadRepo.findByIdOrNull(launchpadMock.id)
-        val expectedDetails = launchpadMock.details
-        assert(firstResult != null)
-        assert(firstResult?.details == expectedDetails)
-        launchpadService.updateOrSaveLaunchpads(listOf(launchpadMockEdited))
-        val secondResult = launchpadRepo.findByIdOrNull(launchpadMockEdited.id)
-        assert(secondResult?.details == launchpadMockEdited.details)
+        @AfterEach
+        fun tearDown() {
+            db.deleteAll()
+        }
+
+        @Test
+        fun `should save new launchpad`() {
+            // given
+            assertNull(db.findByIdOrNull(launchpadMock.id))
+
+            // when
+            service.saveOrUpdate(listOf(launchpadMock))
+
+            // then
+            val queriedResult = db.findByIdOrNull(launchpadMock.id)
+            assertNotNull(queriedResult)
+            assert(queriedResult.details == launchpadMock.details)
+        }
+
+        @Test
+        fun `should update launchpad record if already exists`() {
+            // given
+            service.saveOrUpdate(listOf(launchpadMock))
+            val launchpad = db.findByIdOrNull(launchpadMock.id)
+            assertNotNull(launchpad)
+            val originalAttemptCount = launchpad.launch_attempts
+
+            // when
+            service.saveOrUpdate(listOf(launchpadMockEdited))
+
+            // then
+            val queriedResult = db.findByIdOrNull(launchpadMock.id)
+            assertNotNull(queriedResult)
+            assert(queriedResult.launch_attempts != originalAttemptCount)
+            assert(queriedResult.launch_attempts == launchpadMockEdited.launch_attempts)
+        }
+
+        @Test
+        fun `should throw ResourceNotFoundException if record not exists`() {
+            // given
+            val invalidId = "invalidId"
+
+            // when / then
+            assertThrows<ResourceNotFoundException> { service.getById(invalidId) }
+        }
     }
 }

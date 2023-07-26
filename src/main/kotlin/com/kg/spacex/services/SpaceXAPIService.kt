@@ -1,10 +1,10 @@
 package com.kg.spacex.services
 
-import com.github.kittinunf.fuel.core.ResponseDeserializable
+import com.github.kittinunf.fuel.core.*
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.result.Result
+import com.kg.spacex.utils.ResourceUnavailableException
 import org.springframework.stereotype.Service
-import java.util.logging.Logger
 
 /**
  * Handles all calls to the SpaceX API.
@@ -12,16 +12,14 @@ import java.util.logging.Logger
 @Service
 class SpaceXAPIService {
 
-    val logger = Logger.getLogger("logger")
-
     /**
-     * Fetches the requested object from the SpaceX API based on the given parameters.
+     * Makes call to the SpaceX API based on the given parameters.
      *
-     * If API call fails, a warning is logged detailing the exception experienced and the function returns null.
+     * If API call fails, a custom exception is thrown.
      *
      * @param url is the API endpoint to hit.
-     * @param deserializer is which deserializer to use to deserialize the object returned from the API.
-     * @return the object retrieved, or null if the API call fails or returns null.
+     * @param deserializer is which deserializer to use.
+     * @return if call is successful, returns either the object/collection retrieved or null.
      */
     fun handleAPICall(
         url: String,
@@ -33,13 +31,11 @@ class SpaceXAPIService {
 
         return when (result) {
             is Result.Failure -> {
-                val exception = result.getException()
-                logger.warning("Exception is $exception")
-                null
+                throw ResourceUnavailableException()
             }
             is Result.Success -> {
-                val (apiResult) = result
-                (apiResult)
+                val (responseObject) = result
+                responseObject
             }
         }
     }

@@ -5,11 +5,12 @@ import com.kg.spacex.models.capsule.CapsuleInternal
 import com.kg.spacex.models.launch.LaunchCapsule
 import com.kg.spacex.repos.CapsuleRepository
 import com.kg.spacex.repos.LaunchCapsuleRepository
+import com.kg.spacex.utils.ResourceNotFoundException
+import com.kg.spacex.utils.ResourceUnavailableException
 import com.kg.spacex.utils.SPACEX_API_CAPSULES_URL
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import java.util.logging.Logger
 
 @Service
 class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
@@ -20,64 +21,42 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
     @Autowired
     private lateinit var launchCapsuleRepo: LaunchCapsuleRepository
 
-    val logger = Logger.getLogger("logger")
-
-    // TODO get rid of fetchOne methods? Only used in testing.
-    fun fetchOneCapsule(
-        capsuleId: String
-    ): Boolean {
-        val result = makeAPICall(capsuleId) as CapsuleInternal?
-        return result != null
+    fun fetchOne(
+        id: String
+    ): CapsuleInternal {
+        val result = spaceXAPIService.handleAPICall(
+            url = SPACEX_API_CAPSULES_URL.plus(id),
+            deserializer = CapsuleInternal.Deserializer()
+        ) as CapsuleInternal?
+        return result ?: throw ResourceUnavailableException()
     }
 
-    fun fetchAllCapsules(): List<CapsuleInternal>? {
-        val resultList = makeAPICall(null) as Array<*>? ?: return null
+    fun fetchAll(): List<CapsuleInternal> {
         val capsules = mutableListOf<CapsuleInternal>()
-        resultList.forEach { result ->
-            result as CapsuleInternal
-            capsules.add(result)
-        }
+        val resultList = spaceXAPIService.handleAPICall(
+            url = SPACEX_API_CAPSULES_URL,
+            deserializer = CapsuleInternal.ArrayDeserializer()
+        ) as Array<*>? ?: throw ResourceUnavailableException()
+        resultList.forEach { capsules.add(it as CapsuleInternal) }
         return capsules
     }
 
-    fun makeAPICall(
-        capsuleId: String?
-    ): Any? {
-        return if (capsuleId != null) {
-            spaceXAPIService.handleAPICall(
-                url = SPACEX_API_CAPSULES_URL.plus(capsuleId),
-                deserializer = CapsuleInternal.Deserializer()
-            )
-        } else {
-            spaceXAPIService.handleAPICall(
-                url = SPACEX_API_CAPSULES_URL,
-                deserializer = CapsuleInternal.ArrayDeserializer()
-            )
-        }
-    }
-
-    fun updateOrSaveCapsules(
+    fun saveOrUpdate(
         capsules: List<CapsuleInternal>
     ) {
         capsules.forEach { capsule ->
-            val foundCapsule = db.findByIdOrNull(capsule.id)
-            if (foundCapsule != null) {
-                foundCapsule.status = capsule.status
-                foundCapsule.last_update = capsule.last_update
-                foundCapsule.water_landings = capsule.water_landings
-                foundCapsule.land_landings = capsule.land_landings
-                db.save(foundCapsule)
-            } else {
-                val newCapsuleExternal = prepareToSaveCapsule(capsule)
-                db.save(newCapsuleExternal)
-            }
+            val capsuleExternal = convertToExternal(capsule)
+            db.save(capsuleExternal)
             updateLaunchCapsuleJoinTable(capsule)
         }
     }
 
-    fun prepareToSaveCapsule(
+    fun convertToExternal(
         capsule: CapsuleInternal
     ): CapsuleExternal {
+        /**
+        Converts CapsuleInternal to CapsuleExternal by copying over all attributes except launchIds.
+        */
         return CapsuleExternal(
             id = capsule.id,
             serial = capsule.serial,
@@ -94,8 +73,8 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
     ) {
         val launchIds = capsule.launchIds
         launchIds.forEach { launchId ->
-            val foundMatch = launchCapsuleRepo.findByLaunchIdAndCapsuleId(launchId, capsule.id)
-            if (foundMatch == null) {
+            val existingJoinRecord = launchCapsuleRepo.findByLaunchIdAndCapsuleId(launchId, capsule.id)
+            if (existingJoinRecord == null) {
                 launchCapsuleRepo.save(
                     LaunchCapsule(
                         launchId = launchId,
@@ -106,12 +85,12 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
         }
     }
 
-    fun getCapsulesById(
+    fun getByIds(
         capsuleIds: List<String>
-    ): List<CapsuleExternal>? {
+    ): List<CapsuleExternal> {
         val capsules = mutableListOf<CapsuleExternal>()
         capsuleIds.forEach { id ->
-            val foundCapsule = db.findByIdOrNull(id) ?: return null
+            val foundCapsule = db.findByIdOrNull(id) ?: throw ResourceNotFoundException()
             capsules.add(foundCapsule)
         }
         return capsules
@@ -126,11 +105,8 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
             emptyList()
         } else {
             foundJoinRecords.forEach { joinRecord ->
-                val foundCapsule = db.findByIdOrNull(joinRecord.capsuleId) ?: run {
-                    logger.warning("Capsule ${joinRecord.capsuleId} not found in capsule repo, " +
-                            "yet exists in launch capsule repo.")
-                }
-                capsules.add(foundCapsule as CapsuleExternal)
+                val foundCapsule = db.findByIdOrNull(joinRecord.capsuleId)
+                if (foundCapsule != null) capsules.add(foundCapsule)
             }
             capsules
         }
