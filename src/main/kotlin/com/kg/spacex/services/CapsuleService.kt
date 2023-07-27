@@ -8,18 +8,15 @@ import com.kg.spacex.repos.LaunchCapsuleRepository
 import com.kg.spacex.utils.ResourceNotFoundException
 import com.kg.spacex.utils.ResourceUnavailableException
 import com.kg.spacex.utils.SPACEX_API_CAPSULES_URL
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 @Service
-class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
-
-    @Autowired
-    private lateinit var db: CapsuleRepository
-
-    @Autowired
-    private lateinit var launchCapsuleRepo: LaunchCapsuleRepository
+class CapsuleService (
+    private val spaceXAPIService: SpaceXAPIService,
+    private var repo: CapsuleRepository,
+    private var joinRepo: LaunchCapsuleRepository
+) {
 
     fun fetchOne(
         id: String
@@ -46,17 +43,17 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
     ) {
         capsules.forEach { capsule ->
             val capsuleExternal = convertToExternal(capsule)
-            db.save(capsuleExternal)
-            updateLaunchCapsuleJoinTable(capsule)
+            repo.save(capsuleExternal)
+            saveJoinRecord(capsule)
         }
     }
 
+    /**
+    Converts CapsuleInternal to CapsuleExternal by copying over all attributes except launchIds.
+     */
     fun convertToExternal(
         capsule: CapsuleInternal
     ): CapsuleExternal {
-        /**
-        Converts CapsuleInternal to CapsuleExternal by copying over all attributes except launchIds.
-        */
         return CapsuleExternal(
             id = capsule.id,
             serial = capsule.serial,
@@ -68,14 +65,14 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
         )
     }
 
-    fun updateLaunchCapsuleJoinTable(
+    fun saveJoinRecord(
         capsule: CapsuleInternal
     ) {
         val launchIds = capsule.launchIds
         launchIds.forEach { launchId ->
-            val existingJoinRecord = launchCapsuleRepo.findByLaunchIdAndCapsuleId(launchId, capsule.id)
+            val existingJoinRecord = joinRepo.findByLaunchIdAndCapsuleId(launchId, capsule.id)
             if (existingJoinRecord == null) {
-                launchCapsuleRepo.save(
+                joinRepo.save(
                     LaunchCapsule(
                         launchId = launchId,
                         capsuleId = capsule.id
@@ -85,27 +82,22 @@ class CapsuleService (private val spaceXAPIService: SpaceXAPIService) {
         }
     }
 
-    fun getByIds(
-        capsuleIds: List<String>
-    ): List<CapsuleExternal> {
-        val capsules = mutableListOf<CapsuleExternal>()
-        capsuleIds.forEach { id ->
-            val foundCapsule = db.findByIdOrNull(id) ?: throw ResourceNotFoundException()
-            capsules.add(foundCapsule)
-        }
-        return capsules
+    fun getById(
+        capsuleId: String
+    ): CapsuleExternal {
+        return repo.findByIdOrNull(capsuleId) ?: throw ResourceNotFoundException()
     }
 
-    fun getCapsulesForLaunch(
+    fun getAllByLaunchId(
         launchId: String
     ): List<CapsuleExternal> {
         val capsules = mutableListOf<CapsuleExternal>()
-        val foundJoinRecords = launchCapsuleRepo.findAllByLaunchId(launchId)
+        val foundJoinRecords = joinRepo.findAllByLaunchId(launchId)
         return if (foundJoinRecords.isEmpty()) {
             emptyList()
         } else {
             foundJoinRecords.forEach { joinRecord ->
-                val foundCapsule = db.findByIdOrNull(joinRecord.capsuleId)
+                val foundCapsule = repo.findByIdOrNull(joinRecord.capsuleId)
                 if (foundCapsule != null) capsules.add(foundCapsule)
             }
             capsules

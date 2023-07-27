@@ -2,7 +2,6 @@ package com.kg.spacex.services
 
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
-import com.kg.spacex.models.payload.PayloadInternal
 import com.kg.spacex.repos.LaunchRepository
 import com.kg.spacex.utils.*
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,24 +9,17 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.Period
-import java.util.logging.Logger
 
 @Service
-class LaunchService (
+class LaunchService @Autowired constructor (
     private val capsuleService: CapsuleService,
     private val launchpadService: LaunchpadService,
     private val payloadService: PayloadService,
     private val spaceXAPIService: SpaceXAPIService,
     private val failureService: FailureService,
+    private val db: LaunchRepository
 ) {
 
-    @Autowired
-    private lateinit var db: LaunchRepository
-
-    val logger: Logger = Logger.getLogger("logger")
-
-    //  TODO Create new refresh() in subservice level that calls fetch and save methods?
-    //      This method below would then just call one method per service rather than two
     fun refreshAllData() {
         val capsules = capsuleService.fetchAll()
         val launchpads = launchpadService.fetchAll()
@@ -44,7 +36,7 @@ class LaunchService (
     ): LaunchInternal {
         val result = spaceXAPIService.handleAPICall(
             url = SPACEX_API_LAUNCHES_URL.plus(launchId),
-            deserializer = PayloadInternal.Deserializer()
+            deserializer = LaunchInternal.Deserializer()
         ) as LaunchInternal?
         return result ?: throw ResourceUnavailableException()
     }
@@ -97,17 +89,17 @@ class LaunchService (
             payloads = emptyList(),
             capsules = emptyList(),
             updated_at = LocalDate.now()
-//            updated_at = generateLocalDate()
         )
     }
 
-    // TODO test what you get if foundLaunches is empty
-    //  might not need to throw exception in buildLaunchExternal if can't find id
-    fun getAllLaunchExternalsFromDb(): List<LaunchExternal> {
+    fun getAll(): List<LaunchExternal> {
         if (isDataRefreshNeeded()) refreshAllData()
         val launches = mutableListOf<LaunchExternal>()
         val foundLaunches = db.findAllByOrderById()
-        foundLaunches.forEach { launches.add(buildLaunchExternalById(it.id)) }
+        foundLaunches.forEach { launch ->
+            val newLaunchExternal = buildLaunchExternalById(launch.id)
+            launches.add(newLaunchExternal)
+        }
         return launches
     }
 
@@ -115,9 +107,9 @@ class LaunchService (
         launchId: String
     ): LaunchExternal {
         val foundLaunch = db.findByIdOrNull(launchId) ?: throw ResourceNotFoundException()
-        val failures = failureService.getById(launchId)
-        val payloads = payloadService.getByLaunchId(launchId)
-        val capsules = capsuleService.getCapsulesForLaunch(launchId)
+        val failures = failureService.getAllByLaunchId(launchId)
+        val payloads = payloadService.getAllByLaunchId(launchId)
+        val capsules = capsuleService.getAllByLaunchId(launchId)
         return LaunchExternal(
             id = foundLaunch.id,
             name = foundLaunch.name,

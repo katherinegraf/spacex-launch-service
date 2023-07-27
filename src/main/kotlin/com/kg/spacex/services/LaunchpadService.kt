@@ -5,15 +5,14 @@ import com.kg.spacex.repos.LaunchpadRepository
 import com.kg.spacex.utils.ResourceNotFoundException
 import com.kg.spacex.utils.ResourceUnavailableException
 import com.kg.spacex.utils.SPACEX_API_LAUNCHPADS_URL
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 @Service
-class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
-
-    @Autowired
-    private lateinit var db: LaunchpadRepository
+class LaunchpadService (
+    private val spaceXAPIService: SpaceXAPIService,
+    private var repo: LaunchpadRepository
+) {
 
     fun fetchOne(
         id: String
@@ -38,12 +37,12 @@ class LaunchpadService (private val spaceXAPIService: SpaceXAPIService) {
     fun saveOrUpdate(
         launchpads: List<Launchpad>
     ) {
-        launchpads.forEach { db.save(it) }
+        launchpads.forEach { repo.save(it) }
     }
 
     fun getById(
         launchpadId: String
     ): Launchpad {
-        return db.findByIdOrNull(launchpadId) ?: throw ResourceNotFoundException()
+        return repo.findByIdOrNull(launchpadId) ?: throw ResourceNotFoundException()
     }
 }

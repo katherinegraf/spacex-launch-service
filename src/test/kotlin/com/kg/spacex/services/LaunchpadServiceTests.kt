@@ -20,22 +20,23 @@ import kotlin.test.assertNull
 
 @SpringBootTest
 @AutoConfigureTestDatabase
-class LaunchpadServiceTests {
+class LaunchpadServiceTests @Autowired constructor (
+    private val service: LaunchpadService,
+    private val repo: LaunchpadRepository
+) {
 
     private val mockkApiService = mockk<SpaceXAPIService>()
-    val mockService = LaunchpadService(mockkApiService)
+    val mockService = LaunchpadService(mockkApiService, repo)
 
     @Nested
     @DisplayName("API Operations")
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class FetchFromAPI @Autowired constructor (private val service: LaunchpadService) {
+    inner class FetchFromAPI {
 
         @Test
         fun `should return matching launchpad when calling API for a valid launchpad id`() {
             // given
-            every {
-                mockkApiService.handleAPICall(any(), any())
-            } answers { launchpadMock }
+            every { mockkApiService.handleAPICall(any(), any()) } answers { launchpadMock }
 
             // when
             val result = mockService.fetchOne(launchpadMock.id)
@@ -56,15 +57,14 @@ class LaunchpadServiceTests {
 
             // then
             assertIs<List<Launchpad>>(result)
+            assertIs<Launchpad>(result[0])
             assert(launchpadMock.locality in resultLocalities)
         }
 
         @Test
         fun `should throw ResourceUnavailableException when API call returns null`() {
             // given
-            every {
-                mockkApiService.handleAPICall(any(), any())
-            } answers { nothing }
+            every { mockkApiService.handleAPICall(any(), any()) } answers { nothing }
 
             // when / then
             assertThrows<ResourceUnavailableException> { mockService.fetchOne("id") }
@@ -76,26 +76,23 @@ class LaunchpadServiceTests {
     @Nested
     @DisplayName("Db Operations")
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class DbOps @Autowired constructor (
-        private val service: LaunchpadService,
-        private val db: LaunchpadRepository
-    ) {
+    inner class DbOps {
 
         @AfterEach
         fun tearDown() {
-            db.deleteAll()
+            repo.deleteAll()
         }
 
         @Test
         fun `should save new launchpad`() {
             // given
-            assertNull(db.findByIdOrNull(launchpadMock.id))
+            assertNull(repo.findByIdOrNull(launchpadMock.id))
 
             // when
             service.saveOrUpdate(listOf(launchpadMock))
 
             // then
-            val queriedResult = db.findByIdOrNull(launchpadMock.id)
+            val queriedResult = repo.findByIdOrNull(launchpadMock.id)
             assertNotNull(queriedResult)
             assert(queriedResult.details == launchpadMock.details)
         }
@@ -104,7 +101,7 @@ class LaunchpadServiceTests {
         fun `should update launchpad record if already exists`() {
             // given
             service.saveOrUpdate(listOf(launchpadMock))
-            val launchpad = db.findByIdOrNull(launchpadMock.id)
+            val launchpad = repo.findByIdOrNull(launchpadMock.id)
             assertNotNull(launchpad)
             val originalAttemptCount = launchpad.launch_attempts
 
@@ -112,14 +109,14 @@ class LaunchpadServiceTests {
             service.saveOrUpdate(listOf(launchpadMockEdited))
 
             // then
-            val queriedResult = db.findByIdOrNull(launchpadMock.id)
+            val queriedResult = repo.findByIdOrNull(launchpadMock.id)
             assertNotNull(queriedResult)
             assert(queriedResult.launch_attempts != originalAttemptCount)
             assert(queriedResult.launch_attempts == launchpadMockEdited.launch_attempts)
         }
 
         @Test
-        fun `should throw ResourceNotFoundException if record not exists`() {
+        fun `should throw ResourceNotFoundException if db record not exists`() {
             // given
             val invalidId = "invalidId"
 

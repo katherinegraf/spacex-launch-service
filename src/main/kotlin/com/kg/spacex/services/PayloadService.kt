@@ -12,12 +12,11 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 @Service
-class PayloadService(private val spaceXAPIService: SpaceXAPIService) {
-
-    @Autowired
-    private lateinit var db: PayloadRepository
-    @Autowired
-    private lateinit var launchRepo: LaunchRepository
+class PayloadService(
+    private val spaceXAPIService: SpaceXAPIService,
+    private var repo: PayloadRepository,
+    private var launchRepo: LaunchRepository
+) {
 
     fun fetchOne(
         payloadId: String
@@ -49,7 +48,7 @@ class PayloadService(private val spaceXAPIService: SpaceXAPIService) {
         payloads.forEach { payload ->
             val payloadExternal = convertToExternal(payload)
             val foundLaunch = launchRepo.findByIdOrNull(payloadExternal.launchId)
-            if (foundLaunch != null) db.save(payloadExternal)
+            if (foundLaunch != null) repo.save(payloadExternal)
         }
     }
 
@@ -78,14 +77,14 @@ class PayloadService(private val spaceXAPIService: SpaceXAPIService) {
     fun getById(
         payloadId: String
     ): PayloadExternal {
-        return db.findByIdOrNull(payloadId) ?: throw ResourceNotFoundException()
+        return repo.findByIdOrNull(payloadId) ?: throw ResourceNotFoundException()
     }
 
-    fun getByLaunchId(
+    fun getAllByLaunchId(
         launchId: String
     ): List<PayloadExternal> {
         val payloads = mutableListOf<PayloadExternal>()
-        val foundPayloads = db.findAllByLaunchId(launchId)
+        val foundPayloads = repo.findAllByLaunchId(launchId)
         return if (foundPayloads.isEmpty()) {
             emptyList()
         } else {

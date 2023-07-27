@@ -7,13 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class FailureService() {
-
-    @Autowired
-    private lateinit var db: FailureRepository
+class FailureService @Autowired constructor (private var repo: FailureRepository) {
 
     // TODO refactor for cleanup
 
+    /**
+     * Converts FailureInternals to FailureExternals by adding on a launchId attribute
+     */
     fun convertToExternal(
         failures: List<FailureInternal>,
         launchId: String
@@ -34,12 +34,12 @@ class FailureService() {
     fun saveOrUpdate(
         failures: List<FailureExternal>
     ) {
-        failures.forEach { db.save(it) }
+        failures.forEach { repo.save(it) }
     }
 
-    fun getById(
+    fun getAllByLaunchId(
         launchId: String
     ): List<FailureExternal> {
-        return db.findAllByLaunchId(launchId)
+        return repo.findAllByLaunchId(launchId)
     }
 }

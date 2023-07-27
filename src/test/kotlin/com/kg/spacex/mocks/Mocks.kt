@@ -175,7 +175,7 @@ val launchExternalMock: LaunchExternal = LaunchExternal(
     updated_at = LocalDate.now()
 )
 
-val launchMockFromJanuary2023: LaunchExternal = LaunchExternal(
+val launchMockFromJanuary1999: LaunchExternal = LaunchExternal(
     name = launchInternalMock.name,
     details = launchInternalMock.details,
     date_utc = launchInternalMock.date_utc,
@@ -185,5 +185,5 @@ val launchMockFromJanuary2023: LaunchExternal = LaunchExternal(
     launchpad = launchpadMock,
     payloads = listOf(payloadExternalMock),
     capsules = listOf(capsuleExternalMock),
-    updated_at = LocalDate.ofYearDay(2023, 1)
+    updated_at = LocalDate.ofYearDay(1999, 1)
 )

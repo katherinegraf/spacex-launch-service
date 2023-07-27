@@ -2,7 +2,6 @@ package com.kg.spacex.controllers
 
 import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.capsule.CapsuleInternal
-import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.services.*
 import com.kg.spacex.utils.ErrorMessage
 import com.kg.spacex.utils.ResourceNotFoundException
@@ -37,7 +36,7 @@ class SpaceXController (
     @GetMapping("/")
     fun index(): Any {
         return try {
-            launchService.getAllLaunchExternalsFromDb()
+            launchService.getAll()
         } catch (exception: ResourceNotFoundException) {
             val errorMessage = ErrorMessage(status = 404, "Unable to retrieve launches from database")
             ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
@@ -77,7 +76,7 @@ class SpaceXController (
         @PathVariable("id") id: String
     ): Any {
         return try {
-            capsuleService.getByIds(listOf(id))[0]
+            capsuleService.getById(id)
         } catch (exception: ResourceNotFoundException) {
             val errorMessage = ErrorMessage(status = 404, "Could not find that id in database")
             ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
@@ -120,6 +119,18 @@ class SpaceXController (
         }
     }
 
+    @GetMapping("launch/api-test/{id}")
+    fun getLaunchFromAPI(
+        @PathVariable("id") id: String
+    ): Any {
+        return try {
+            launchService.fetchOne(id)
+        } catch (exception: ResourceUnavailableException) {
+            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
+        }
+    }
+
     @GetMapping("launchpad/test")
     fun getLaunchpadsFromAPI(): Any {
         return try {
@@ -141,6 +152,6 @@ class SpaceXController (
     fun getCapsuleByLaunchId(
         @PathVariable id: String
     ): List<CapsuleExternal> {
-        return capsuleService.getCapsulesForLaunch(id)
+        return capsuleService.getAllByLaunchId(id)
     }
 }
