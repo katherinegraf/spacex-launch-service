@@ -21,28 +21,34 @@ import kotlin.test.assertNull
 
 @SpringBootTest
 @AutoConfigureTestDatabase
-class CapsuleServiceTests {
+class CapsuleServiceTests @Autowired constructor(
+    private val service: CapsuleService,
+    private val repo: CapsuleRepository,
+    private val joinRepo: LaunchCapsuleRepository
+) {
 
-    private val mockkApiService = mockk<SpaceXAPIService>()
-    private val mockService = CapsuleService(mockkApiService)
+    private val mockApiService = mockk<SpaceXAPIService>()
+    private val mockService = CapsuleService(
+        mockApiService,
+        repo,
+        joinRepo
+    )
 
     @Nested
     @DisplayName("API Operations")
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class FetchFromAPI @Autowired constructor (private val service: CapsuleService) {
+    inner class FetchFromAPI {
 
         @Test
         fun `should return matching capsule when calling API for a valid capsule id`() {
             // given
-            every {
-                mockkApiService.handleAPICall(any(), any())
-            } answers { capsuleInternalMock }
+            every { mockApiService.handleAPICall(any(), any()) } answers { capsuleInternalMock }
 
             // when
             val result = mockService.fetchOne(capsuleInternalMock.id)
 
             // then
-            verify { mockkApiService.handleAPICall(any(), any()) }
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result.serial == capsuleInternalMock.serial)
         }
 
@@ -57,48 +63,43 @@ class CapsuleServiceTests {
 
             // then
             assertIs<List<CapsuleInternal>>(result)
+            assertIs<CapsuleInternal>(result[0])
             assert(capsuleInternalMock.serial in resultSerials)
         }
 
         @Test
         fun `should throw ResourceUnavailableException when API call returns null`() {
             // given
-            every {
-                mockkApiService.handleAPICall(any(), any())
-            } answers { nothing }
+            every { mockApiService.handleAPICall(any(), any()) } answers { nothing }
 
             // when / then
             assertThrows<ResourceUnavailableException> { mockService.fetchOne("id") }
             assertThrows<ResourceUnavailableException> { mockService.fetchAll() }
-            verify(exactly = 2) { mockkApiService.handleAPICall(any(), any()) }
+            verify(exactly = 2) { mockApiService.handleAPICall(any(), any()) }
         }
     }
 
     @Nested
     @DisplayName("Db Operations")
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class DbOps @Autowired constructor (
-        private val service: CapsuleService,
-        private val db: CapsuleRepository,
-        private val joinDb: LaunchCapsuleRepository
-    ) {
+    inner class DbOps {
 
         @AfterEach
         fun tearDown() {
-            db.deleteAll()
-            joinDb.deleteAll()
+            repo.deleteAll()
+            joinRepo.deleteAll()
         }
 
         @Test
         fun `should save new capsule`() {
             // given
-            assertNull(db.findByIdOrNull(capsuleInternalMock.id))
+            assertNull(repo.findByIdOrNull(capsuleInternalMock.id))
 
             // when
             service.saveOrUpdate(listOf(capsuleInternalMock))
 
             // then
-            val queriedResult = db.findByIdOrNull(capsuleInternalMock.id)
+            val queriedResult = repo.findByIdOrNull(capsuleInternalMock.id)
             assertNotNull(queriedResult)
             assert(queriedResult.serial == capsuleInternalMock.serial)
         }
@@ -107,7 +108,7 @@ class CapsuleServiceTests {
         fun `should update capsule record if already exists`() {
             // given
             service.saveOrUpdate(listOf(capsuleInternalMock))
-            val capsule = db.findByIdOrNull(capsuleInternalMock.id)
+            val capsule = repo.findByIdOrNull(capsuleInternalMock.id)
             assertNotNull(capsule)
             val originalWaterLandingsCount = capsule.water_landings
 
@@ -115,7 +116,7 @@ class CapsuleServiceTests {
             service.saveOrUpdate(listOf(capsuleInternalMockEdited))
 
             // then
-            val queriedResult = db.findByIdOrNull(capsuleInternalMock.id)
+            val queriedResult = repo.findByIdOrNull(capsuleInternalMock.id)
             assertNotNull(queriedResult)
             assert(queriedResult.water_landings != originalWaterLandingsCount)
             assert(queriedResult.water_landings == capsuleInternalMockEdited.water_landings)
@@ -124,34 +125,31 @@ class CapsuleServiceTests {
         @Test
         fun `should not create duplicate launch-capsule association record in join table`() {
             // given
-            service.updateLaunchCapsuleJoinTable(capsuleInternalMock)
-            assert(joinDb.findAllByLaunchId(capsuleInternalMock.launchIds[0]).isNotEmpty())
+            service.saveJoinRecord(capsuleInternalMock)
+            assert(joinRepo.findAllByLaunchId(capsuleInternalMock.launchIds[0]).isNotEmpty())
 
             // when
-            service.updateLaunchCapsuleJoinTable(capsuleInternalMock)
+            service.saveJoinRecord(capsuleInternalMock)
 
             // then
-            val queriedResult = joinDb.findAllByLaunchId(capsuleInternalMock.launchIds[0])
+            val queriedResult = joinRepo.findAllByLaunchId(capsuleInternalMock.launchIds[0])
             assert(queriedResult.size == 1)
         }
 
         @Test
         fun `should throw ResourceNotFoundException when db record not exists`() {
-            // given
-            val invalidId = "invalidId"
-
             // when / then
-            assertThrows<ResourceNotFoundException> { service.getByIds(listOf(invalidId)) }
+            assertThrows<ResourceNotFoundException> { service.getById("invalidId") }
         }
 
         @Test
         fun `should return list of CapsuleExternals given valid launch id and existing LaunchCapsule record`() {
             // given
             service.saveOrUpdate(listOf(capsuleInternalMock))
-            assert(joinDb.findAllByLaunchId(capsuleInternalMock.launchIds[0]).isNotEmpty())
+            assert(joinRepo.findAllByLaunchId(capsuleInternalMock.launchIds[0]).isNotEmpty())
 
             // when
-            val result = service.getCapsulesForLaunch(launchInternalMock.id)
+            val result = service.getAllByLaunchId(launchInternalMock.id)
 
             // then
             assertIs<List<CapsuleExternal>>(result)
@@ -163,11 +161,11 @@ class CapsuleServiceTests {
             // given
             val invalidId = "invalidId"
             val validId = launchInternalMock.id
-            assert(joinDb.findAllByLaunchId(capsuleInternalMock.launchIds[0]).isEmpty())
+            assert(joinRepo.findAllByLaunchId(capsuleInternalMock.launchIds[0]).isEmpty())
 
             // when
-            val firstResult = service.getCapsulesForLaunch(invalidId)
-            val secondResult = service.getCapsulesForLaunch(validId)
+            val firstResult = service.getAllByLaunchId(invalidId)
+            val secondResult = service.getAllByLaunchId(validId)
 
             // then
             assert(firstResult.isEmpty())

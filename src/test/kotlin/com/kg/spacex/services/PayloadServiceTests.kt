@@ -3,6 +3,7 @@ package com.kg.spacex.services
 import com.kg.spacex.mocks.*
 import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.models.payload.PayloadInternal
+import com.kg.spacex.repos.FailureRepository
 import com.kg.spacex.repos.LaunchRepository
 import com.kg.spacex.repos.PayloadRepository
 import com.kg.spacex.utils.ResourceNotFoundException
@@ -21,23 +22,32 @@ import kotlin.test.assertNull
 
 @SpringBootTest
 @AutoConfigureTestDatabase
-//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class PayloadServiceTests {
+class PayloadServiceTests @Autowired constructor (
+    private val service: PayloadService,
+    private val repo: PayloadRepository,
+    private val launchService: LaunchService,
+    private val launchRepo: LaunchRepository,
+    private val launchpadService: LaunchpadService,
+    private val launchpadRepo: LaunchRepository,
+    private val failureRepo: FailureRepository
+)  {
 
     private val mockkApiService = mockk<SpaceXAPIService>()
-    private val mockService = PayloadService(mockkApiService)
+    private val mockService = PayloadService(
+        mockkApiService,
+        repo,
+        launchRepo
+    )
 
     @Nested
     @DisplayName("API Operations")
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class FetchFromAPI @Autowired constructor (private val service: PayloadService) {
+    inner class FetchFromAPI {
 
         @Test
         fun `should return matching payload when calling API for a valid payload id`() {
             // given
-            every {
-                mockkApiService.handleAPICall(any(), any())
-            } answers { payloadInternalMock }
+            every { mockkApiService.handleAPICall(any(), any()) } answers { payloadInternalMock }
 
             // when
             val result = mockService.fetchOne(payloadInternalMock.id)
@@ -64,9 +74,7 @@ class PayloadServiceTests {
         @Test
         fun `should throw ResourceUnavailableException when API call returns null`() {
             // given
-            every {
-                mockkApiService.handleAPICall(any(), any())
-            } answers { nothing }
+            every { mockkApiService.handleAPICall(any(), any()) } answers { nothing }
 
             // when / then
             assertThrows<ResourceUnavailableException> { mockService.fetchOne("id") }
@@ -78,14 +86,7 @@ class PayloadServiceTests {
     @Nested
     @DisplayName("Db Operations")
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class DbOps @Autowired constructor (
-        private val service: PayloadService,
-        private val db: PayloadRepository,
-        private val launchService: LaunchService,
-        private val launchRepo: LaunchRepository,
-        private val launchpadService: LaunchpadService,
-        private val launchpadRepo: LaunchRepository
-    ) {
+    inner class DbOps {
 
         @BeforeAll
         fun setup() {
@@ -95,12 +96,13 @@ class PayloadServiceTests {
 
         @AfterEach
         fun tearDownEachTime() {
-            db.deleteAll()
+            repo.deleteAll()
         }
 
         @AfterAll
         fun tearDownAfterAll() {
-            db.deleteAll()
+            repo.deleteAll()
+            failureRepo.deleteAll()
             launchRepo.deleteAll()
             launchpadRepo.deleteAll()
         }
@@ -108,13 +110,13 @@ class PayloadServiceTests {
         @Test
         fun `should save new payload if associated launch exists`() {
             // given
-            assertNull(db.findByIdOrNull(payloadInternalMock.id))
+            assertNull(repo.findByIdOrNull(payloadInternalMock.id))
 
             // when
             service.saveOrUpdate(listOf(payloadInternalMock))
 
             // then
-            val queriedResult = db.findByIdOrNull(payloadInternalMock.id)
+            val queriedResult = repo.findByIdOrNull(payloadInternalMock.id)
             assertNotNull(queriedResult)
             assert(queriedResult.name == payloadInternalMock.name)
         }
@@ -122,21 +124,21 @@ class PayloadServiceTests {
         @Test
         fun `should not save new payload if associated launch not exists`() {
             // given
-            assertNull(db.findByIdOrNull(payloadMockWithUnsavedLaunch.id))
+            assertNull(repo.findByIdOrNull(payloadMockWithUnsavedLaunch.id))
             assertNull(launchRepo.findByIdOrNull(payloadMockWithUnsavedLaunch.launchId))
 
             // when
             service.saveOrUpdate(listOf(payloadMockWithUnsavedLaunch))
 
             // then
-            assertNull(db.findByIdOrNull(payloadMockWithUnsavedLaunch.id))
+            assertNull(repo.findByIdOrNull(payloadMockWithUnsavedLaunch.id))
         }
 
         @Test
         fun `should update payload record if already exists`() {
             // given
             service.saveOrUpdate(listOf(payloadInternalMock))
-            val payload = db.findByIdOrNull(payloadInternalMock.id)
+            val payload = repo.findByIdOrNull(payloadInternalMock.id)
             assertNotNull(payload)
             val originalMassKg = payload.mass_kg
 
@@ -144,7 +146,7 @@ class PayloadServiceTests {
             service.saveOrUpdate(listOf(payloadInternalMockEdited))
 
             // then
-            val queriedResult = db.findByIdOrNull(payloadInternalMock.id)
+            val queriedResult = repo.findByIdOrNull(payloadInternalMock.id)
             assertNotNull(queriedResult)
             assert(queriedResult.mass_kg != originalMassKg)
             assert(queriedResult.mass_kg == payloadInternalMockEdited.mass_kg)
@@ -165,7 +167,7 @@ class PayloadServiceTests {
             service.saveOrUpdate(listOf(payloadInternalMock))
 
             // when
-            val result = service.getByLaunchId(launchInternalMock.id)
+            val result = service.getAllByLaunchId(launchInternalMock.id)
 
             // then
             assertIs<List<PayloadExternal>>(result)
@@ -175,11 +177,11 @@ class PayloadServiceTests {
         @Test
         fun `should return empty list if no payloads exist for given launch id`() {
             // given
-            val queryResult = db.findByIdOrNull(launchInternalMock.payloadIds[0])
+            val queryResult = repo.findByIdOrNull(launchInternalMock.payloadIds[0])
             assertNull(queryResult)
 
             // when
-            val result = service.getByLaunchId(launchInternalMock.id)
+            val result = service.getAllByLaunchId(launchInternalMock.id)
 
             // then
             assert(result.isEmpty())

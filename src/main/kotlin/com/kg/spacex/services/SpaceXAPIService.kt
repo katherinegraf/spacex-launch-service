@@ -5,6 +5,7 @@ import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.result.Result
 import com.kg.spacex.utils.ResourceUnavailableException
 import org.springframework.stereotype.Service
+import java.util.logging.Logger
 
 /**
  * Handles all calls to the SpaceX API.
