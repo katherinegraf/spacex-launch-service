@@ -5,7 +5,7 @@ A Kotlin app that integrates with the SpaceX API to aggregate information from v
 - Set up a local postgres database called `spacex`; set up username/password in `application.yml`
 - To run app, use `./gradlew bootrun`
 - To run migrations, use `flyway migrate`
-- Open a web browser to `http://localhost:8080`
+- Open a web browser to `http://localhost:8080/`
 
 ## **Example Launch Object**
 ```{
