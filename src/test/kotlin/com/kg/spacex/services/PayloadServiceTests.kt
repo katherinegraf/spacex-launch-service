@@ -1,6 +1,7 @@
 package com.kg.spacex.services
 
 import com.kg.spacex.mocks.*
+import com.kg.spacex.models.launch.LaunchInternal
 import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.models.payload.PayloadInternal
 import com.kg.spacex.repos.FailureRepository
@@ -32,9 +33,9 @@ class PayloadServiceTests @Autowired constructor (
     private val failureRepo: FailureRepository
 )  {
 
-    private val mockkApiService = mockk<SpaceXAPIService>()
+    private val mockApiService = mockk<SpaceXAPIService>()
     private val mockService = PayloadService(
-        mockkApiService,
+        mockApiService,
         repo,
         launchRepo
     )
@@ -47,18 +48,32 @@ class PayloadServiceTests @Autowired constructor (
         @Test
         fun `should return matching payload when calling API for a valid payload id`() {
             // given
-            every { mockkApiService.handleAPICall(any(), any()) } answers { payloadInternalMock }
+            every { mockApiService.handleAPICall(any(), any()) } returns payloadInternalMock
 
             // when
             val result = mockService.fetchOne(payloadInternalMock.id)
 
             // then
-            verify { mockkApiService.handleAPICall(any(), any()) }
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result.name == payloadInternalMock.name)
         }
 
         @Test
-        fun `should return list of PayloadInternals if API call is successful`() {
+        fun `should return list of PayloadInternals given successful API call - unit test`() {
+            // given
+            every { mockApiService.handleAPICall(any(), any()) } returns arrayOf(payloadInternalMock)
+
+            // when
+            val result = mockService.fetchAll()
+
+            // then
+            verify { mockApiService.handleAPICall(any(), any()) }
+            assertIs<List<PayloadInternal>>(result)
+            assert(payloadInternalMock in result)
+        }
+
+        @Test
+        fun `should return list of PayloadInternals if API call is successful - integration test`() {
             // given
             val resultNames = mutableListOf<String>()
 
@@ -74,12 +89,12 @@ class PayloadServiceTests @Autowired constructor (
         @Test
         fun `should throw ResourceUnavailableException when API call returns null`() {
             // given
-            every { mockkApiService.handleAPICall(any(), any()) } answers { nothing }
+            every { mockApiService.handleAPICall(any(), any()) } answers { nothing }
 
             // when / then
             assertThrows<ResourceUnavailableException> { mockService.fetchOne("id") }
             assertThrows<ResourceUnavailableException> { mockService.fetchAll() }
-            verify(exactly = 2) { mockkApiService.handleAPICall(any(), any()) }
+            verify(exactly = 2) { mockApiService.handleAPICall(any(), any()) }
         }
     }
 

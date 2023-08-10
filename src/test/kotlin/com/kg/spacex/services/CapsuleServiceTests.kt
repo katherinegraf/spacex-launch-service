@@ -3,6 +3,7 @@ package com.kg.spacex.services
 import com.kg.spacex.mocks.*
 import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.capsule.CapsuleInternal
+import com.kg.spacex.models.launch.LaunchInternal
 import com.kg.spacex.repos.CapsuleRepository
 import com.kg.spacex.repos.LaunchCapsuleRepository
 import com.kg.spacex.utils.ResourceNotFoundException
@@ -42,7 +43,7 @@ class CapsuleServiceTests @Autowired constructor(
         @Test
         fun `should return matching capsule when calling API for a valid capsule id`() {
             // given
-            every { mockApiService.handleAPICall(any(), any()) } answers { capsuleInternalMock }
+            every { mockApiService.handleAPICall(any(), any()) } returns capsuleInternalMock
 
             // when
             val result = mockService.fetchOne(capsuleInternalMock.id)
@@ -53,7 +54,21 @@ class CapsuleServiceTests @Autowired constructor(
         }
 
         @Test
-        fun `should return list of CapsuleInternals if API call is successful`() {
+        fun `should return list of CapsuleInternals given successful API call - unit test`() {
+            // given
+            every { mockApiService.handleAPICall(any(), any()) } returns arrayOf(capsuleInternalMock)
+
+            // when
+            val result = mockService.fetchAll()
+
+            // then
+            verify { mockApiService.handleAPICall(any(), any()) }
+            assertIs<List<CapsuleInternal>>(result)
+            assert(capsuleInternalMock in result)
+        }
+
+        @Test
+        fun `should return list of CapsuleInternals if API call is successful - integration test`() {
             // given
             val resultSerials = mutableListOf<String>()
 

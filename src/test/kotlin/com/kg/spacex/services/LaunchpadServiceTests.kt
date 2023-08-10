@@ -25,8 +25,8 @@ class LaunchpadServiceTests @Autowired constructor (
     private val repo: LaunchpadRepository
 ) {
 
-    private val mockkApiService = mockk<SpaceXAPIService>()
-    val mockService = LaunchpadService(mockkApiService, repo)
+    private val mockApiService = mockk<SpaceXAPIService>()
+    val mockService = LaunchpadService(mockApiService, repo)
 
     @Nested
     @DisplayName("API Operations")
@@ -36,18 +36,32 @@ class LaunchpadServiceTests @Autowired constructor (
         @Test
         fun `should return matching launchpad when calling API for a valid launchpad id`() {
             // given
-            every { mockkApiService.handleAPICall(any(), any()) } answers { launchpadMock }
+            every { mockApiService.handleAPICall(any(), any()) } returns launchpadMock
 
             // when
             val result = mockService.fetchOne(launchpadMock.id)
 
             // then
-            verify { mockkApiService.handleAPICall(any(), any()) }
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result.locality == launchpadMock.locality)
         }
 
         @Test
-        fun `should return list of Launchpads if API call is successful`() {
+        fun `should return list of Launchpads given successful API call - unit test`() {
+            // given
+            every { mockApiService.handleAPICall(any(), any()) } returns arrayOf(launchpadMock)
+
+            // when
+            val result = mockService.fetchAll()
+
+            // then
+            verify { mockApiService.handleAPICall(any(), any()) }
+            assertIs<List<Launchpad>>(result)
+            assert(launchpadMock in result)
+        }
+
+        @Test
+        fun `should return list of Launchpads if API call is successful - integration test`() {
             // given
             val resultLocalities = mutableListOf<String>()
 
@@ -64,12 +78,12 @@ class LaunchpadServiceTests @Autowired constructor (
         @Test
         fun `should throw ResourceUnavailableException when API call returns null`() {
             // given
-            every { mockkApiService.handleAPICall(any(), any()) } answers { nothing }
+            every { mockApiService.handleAPICall(any(), any()) } answers { nothing }
 
             // when / then
             assertThrows<ResourceUnavailableException> { mockService.fetchOne("id") }
             assertThrows<ResourceUnavailableException> { mockService.fetchAll() }
-            verify(exactly = 2) { mockkApiService.handleAPICall(any(), any()) }
+            verify(exactly = 2) { mockApiService.handleAPICall(any(), any()) }
         }
     }
 

@@ -18,7 +18,7 @@ import kotlin.test.*
 
 @SpringBootTest
 @AutoConfigureTestDatabase
-class LaunchServiceTests @Autowired constructor(
+class LaunchServiceTests @Autowired constructor (
     private val service: LaunchService,
     private val launchpadService: LaunchpadService,
     failureService: FailureService,
@@ -85,7 +85,7 @@ class LaunchServiceTests @Autowired constructor(
         @Test
         fun `should return matching launch when calling API for a valid launch id`() {
             // given
-            every { mockApiService.handleAPICall(any(), any()) } answers { launchInternalMock }
+            every { mockApiService.handleAPICall(any(), any()) } returns launchInternalMock
 
             // when
             val result = mockService.fetchOne(launchInternalMock.id)
@@ -95,10 +95,22 @@ class LaunchServiceTests @Autowired constructor(
             assert(result.name == launchInternalMock.name)
         }
 
-        // TODO mock fetchAll() methods
+        @Test
+        fun `should return list of LaunchInternals given successful API call - unit test`() {
+            // given
+            every { mockApiService.handleAPICall(any(), any()) } returns arrayOf(launchInternalMock)
+
+            // when
+            val result = mockService.fetchAll()
+
+            // then
+            verify { mockApiService.handleAPICall(any(), any()) }
+            assertIs<List<LaunchInternal>>(result)
+            assert(launchInternalMock in result)
+        }
 
         @Test
-        fun `should return list of LaunchInternals if API call is successful`() {
+        fun `should return list of LaunchInternals if API call is successful - integration test`() {
             // given
             val resultNames = mutableListOf<String>()
 
@@ -122,7 +134,6 @@ class LaunchServiceTests @Autowired constructor(
             assertThrows<ResourceUnavailableException> { mockService.fetchAll() }
             verify(exactly = 2) { mockApiService.handleAPICall(any(), any()) }
         }
-
     }
 
     @Nested
@@ -212,6 +223,18 @@ class LaunchServiceTests @Autowired constructor(
         }
 
         @Test
+        fun `should throw ResourceNotFoundException if no db records exist`() {
+            // given
+            every { mockLaunchRepo.findFirstByOrderById() } returns launchExternalMock
+                // ^ tricking isDataRefreshNeeded into returning false so that refreshAllData() isn't called
+            every { mockLaunchRepo.findAllByOrderById() } returns emptyList()
+                // ^ mocking that no db records exist
+
+            // when / then
+            assertThrows<ResourceNotFoundException> { mockService.getAll() }
+        }
+
+        @Test
         fun `should throw ResourceNotFoundException if findById returns null`() {
             // given
             assertNull(launchRepo.findByIdOrNull("someId"))
@@ -235,7 +258,7 @@ class LaunchServiceTests @Autowired constructor(
         @Test
         fun `should return true if updated_at is greater than 6 days ago`() {
             // given
-            every { mockLaunchRepo.findFirstByOrderById() } answers { launchMockFromJanuary1999 }
+            every { mockLaunchRepo.findFirstByOrderById() } returns launchMockFromJanuary1999
 
             // when
             val result = mockService.isDataRefreshNeeded()

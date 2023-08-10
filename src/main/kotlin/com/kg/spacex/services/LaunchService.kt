@@ -4,20 +4,20 @@ import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
 import com.kg.spacex.repos.LaunchRepository
 import com.kg.spacex.utils.*
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.Period
+import java.util.logging.Logger
 
 @Service
-class LaunchService @Autowired constructor (
+class LaunchService (
     private val capsuleService: CapsuleService,
     private val launchpadService: LaunchpadService,
     private val payloadService: PayloadService,
     private val spaceXAPIService: SpaceXAPIService,
     private val failureService: FailureService,
-    private val db: LaunchRepository
+    private val repo: LaunchRepository
 ) {
 
     fun refreshAllData() {
@@ -56,7 +56,7 @@ class LaunchService @Autowired constructor (
     ) {
         launches.forEach { launch ->
             val launchExternal = convertToExternal(launch)
-                db.save(launchExternal)
+                repo.save(launchExternal)
                 failureService.saveOrUpdate(launchExternal.failures)
         }
     }
@@ -94,8 +94,9 @@ class LaunchService @Autowired constructor (
 
     fun getAll(): List<LaunchExternal> {
         if (isDataRefreshNeeded()) refreshAllData()
+        val foundLaunches = repo.findAllByOrderById()
         val launches = mutableListOf<LaunchExternal>()
-        val foundLaunches = db.findAllByOrderById()
+        if (foundLaunches.isEmpty()) throw ResourceNotFoundException()
         foundLaunches.forEach { launch ->
             val newLaunchExternal = buildLaunchExternalById(launch.id)
             launches.add(newLaunchExternal)
@@ -106,7 +107,7 @@ class LaunchService @Autowired constructor (
     fun buildLaunchExternalById(
         launchId: String
     ): LaunchExternal {
-        val foundLaunch = db.findByIdOrNull(launchId) ?: throw ResourceNotFoundException()
+        val foundLaunch = repo.findByIdOrNull(launchId) ?: throw ResourceNotFoundException()
         val failures = failureService.getAllByLaunchId(launchId)
         val payloads = payloadService.getAllByLaunchId(launchId)
         val capsules = capsuleService.getAllByLaunchId(launchId)
@@ -125,7 +126,7 @@ class LaunchService @Autowired constructor (
     }
 
     fun isDataRefreshNeeded(): Boolean {
-        val lastUpdated = db.findFirstByOrderById()?.updated_at ?: return true
+        val lastUpdated = repo.findFirstByOrderById()?.updated_at ?: return true
         val daysSinceLastUpdate = Period.between(lastUpdated, LocalDate.now()).days
         return daysSinceLastUpdate > 6
     }

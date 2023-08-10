@@ -1,7 +1,5 @@
 package com.kg.spacex.controllers
 
-import com.kg.spacex.models.capsule.CapsuleExternal
-import com.kg.spacex.models.capsule.CapsuleInternal
 import com.kg.spacex.services.*
 import com.kg.spacex.utils.ErrorMessage
 import com.kg.spacex.utils.ResourceNotFoundException
@@ -9,13 +7,7 @@ import com.kg.spacex.utils.ResourceUnavailableException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.client.HttpClientErrorException
-import java.util.logging.Logger
 
-/**
- * @property spaceXAPIService exists for testing, so that an instance of SpaceXController
- * can be generated using a mocked API service.
- */
 @RestController
 @RequestMapping("/spacex-launches")
 class SpaceXController (
@@ -26,31 +18,14 @@ class SpaceXController (
     private val payloadService: PayloadService
 ) {
 
-    val logger: Logger = Logger.getLogger("logger")
-
-    // TODO can this be removed since I'm using try/catch blocks?
-    @ExceptionHandler(HttpClientErrorException.NotFound::class)
-    fun handleNotFound(e: HttpClientErrorException.NotFound): ResponseEntity<String> =
-        ResponseEntity(e.message, HttpStatus.NOT_FOUND)
-
     @GetMapping("/")
     fun index(): Any {
         return try {
             launchService.getAll()
         } catch (exception: ResourceNotFoundException) {
-            val errorMessage = ErrorMessage(status = 404, "Unable to retrieve launches from database")
+            val errorMessage = ErrorMessage(status = 404, "Unable to retrieve launch data from database")
             ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
         }
-//        val dataRefreshNeeded = launchService.isDataRefreshNeeded()
-//        if (dataRefreshNeeded) {
-//            launchService.refreshAllData() ?: return ResponseEntity(HttpStatus.NOT_FOUND)
-//        }
-//        val launches = launchService.getAllLaunchExternalsFromDb()
-//        return if (launches == null) {
-//            ResponseEntity(HttpStatus.NOT_FOUND)
-//        } else {
-//            ResponseEntity(launches, HttpStatus.OK)
-//        }
     }
 
     @GetMapping("/launches/{id}")
@@ -63,12 +38,6 @@ class SpaceXController (
             val errorMessage = ErrorMessage(status = 404, "Could not find that id in database")
             ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
         }
-//        val launch = launchService.buildLaunchExternalById(launchId)
-//        return if (launch == null) {
-//            ResponseEntity(HttpStatus.NOT_FOUND)
-//        } else {
-//            ResponseEntity(launch, HttpStatus.OK)
-//        }
     }
 
     @GetMapping("/capsules/{id}")
@@ -107,7 +76,72 @@ class SpaceXController (
         }
     }
 
-    @GetMapping("launchpad/test/{id}")
+    @GetMapping("launches/api/{id}")
+    fun getLaunchFromAPI(
+        @PathVariable("id") id: String
+    ): Any {
+        return try {
+            launchService.fetchOne(id)
+        } catch (exception: ResourceUnavailableException) {
+            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
+        }
+    }
+    @GetMapping("launches/api")
+    fun getLaunchesFromAPI(): Any {
+        return try {
+            launchService.fetchAll()
+        } catch (exception: ResourceUnavailableException) {
+            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @GetMapping("capsules/api/{id}")
+    fun getCapsuleFromAPI(
+        @PathVariable("id") id: String
+    ): Any {
+        return try {
+            capsuleService.fetchOne(id)
+        } catch (exception: ResourceUnavailableException) {
+            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @GetMapping("capsules/api")
+    fun getCapsulesFromAPI(): Any {
+        return try {
+            capsuleService.fetchAll()
+        } catch (exception: ResourceUnavailableException) {
+            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @GetMapping("payloads/api/{id}")
+    fun getPayloadFromAPI(
+        @PathVariable("id") id: String
+    ): Any {
+        return try {
+            payloadService.fetchOne(id)
+        } catch (exception: ResourceUnavailableException) {
+            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @GetMapping("payloads/api")
+    fun getPayloadsFromAPI(): Any {
+        return try {
+            payloadService.fetchAll()
+        } catch (exception: ResourceUnavailableException) {
+            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
+            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
+        }
+    }
+
+    @GetMapping("launchpads/api/{id}")
     fun getLaunchpadFromAPI(
         @PathVariable("id") id: String
     ): Any {
@@ -119,19 +153,7 @@ class SpaceXController (
         }
     }
 
-    @GetMapping("launch/api-test/{id}")
-    fun getLaunchFromAPI(
-        @PathVariable("id") id: String
-    ): Any {
-        return try {
-            launchService.fetchOne(id)
-        } catch (exception: ResourceUnavailableException) {
-            val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
-            ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
-        }
-    }
-
-    @GetMapping("launchpad/test")
+    @GetMapping("launchpads/api")
     fun getLaunchpadsFromAPI(): Any {
         return try {
             launchpadService.fetchAll()
@@ -139,19 +161,5 @@ class SpaceXController (
             val errorMessage = ErrorMessage(status = 404,"API resource unavailable")
             ResponseEntity(errorMessage, HttpStatus.NOT_FOUND)
         }
-    }
-
-    @PostMapping("capsule/new")
-    fun add(
-        @RequestBody capsule: CapsuleInternal
-    ) {
-        capsuleService.saveOrUpdate(listOf(capsule))
-    }
-
-    @GetMapping("capsule/getByLaunch/{id}")
-    fun getCapsuleByLaunchId(
-        @PathVariable id: String
-    ): List<CapsuleExternal> {
-        return capsuleService.getAllByLaunchId(id)
     }
 }
