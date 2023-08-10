@@ -1,11 +1,11 @@
 package com.kg.spacex.controllers
 
 import com.kg.spacex.mocks.*
-import com.kg.spacex.models.capsule.CapsuleInternal
-import com.kg.spacex.models.Launchpad
 import com.kg.spacex.models.capsule.CapsuleExternal
+import com.kg.spacex.models.capsule.CapsuleInternal
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
+import com.kg.spacex.models.Launchpad
 import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.models.payload.PayloadInternal
 import com.kg.spacex.repos.*
@@ -26,14 +26,12 @@ import kotlin.test.*
 @SpringBootTest
 @AutoConfigureTestDatabase
 class SpaceXControllerTests @Autowired constructor (
-    private val spaceXAPIService: SpaceXAPIService,
     private val capsuleService: CapsuleService,
     private val launchService: LaunchService,
     private val launchpadService: LaunchpadService,
     private val payloadService: PayloadService,
-    private val failureService: FailureService,
-    private val failureRepo: FailureRepository,
-    private val launchCapsuleRepo: LaunchCapsuleRepository,
+    failureService: FailureService,
+    launchCapsuleRepo: LaunchCapsuleRepository,
     private val capsuleRepo: CapsuleRepository,
     private val payloadRepo: PayloadRepository,
     private val launchRepo: LaunchRepository,
@@ -235,7 +233,7 @@ class SpaceXControllerTests @Autowired constructor (
     @Nested
     @DisplayName("Fetch from API")
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class APIFetchTests () {
+    inner class APIFetchTests {
 
         @Test
         fun `should return LaunchInternal matching given id given successful API call`() {
@@ -480,6 +478,5 @@ class SpaceXControllerTests @Autowired constructor (
             val resultBody = result.body as ErrorMessage
             assert(resultBody.status == 404 && resultBody.message == "API resource unavailable")
         }
-
     }
 }
