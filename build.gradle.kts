@@ -29,7 +29,7 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	testImplementation ("io.mockk:mockk:1.9.3")
+	testImplementation ("io.mockk:mockk:1.11.0")
 	implementation ("com.github.kittinunf.fuel:fuel:2.3.1")
 	implementation ("com.google.code.gson:gson:2.10.1")
 	testImplementation("com.h2database:h2")

@@ -74,19 +74,6 @@ val payloadExternalMock: PayloadExternal = PayloadExternal(
     mass_lbs = payloadInternalMock.mass_lbs
 )
 
-val payloadMockInvalidLaunchId: PayloadInternal = PayloadInternal(
-    id = "invalidId",
-    name = payloadInternalMock.name,
-    type = payloadInternalMock.type,
-    regime = payloadInternalMock.regime,
-    launchId = "invalidLaunchId",
-    customers = payloadInternalMock.customers,
-    nationalities = payloadInternalMock.nationalities,
-    manufacturers = payloadInternalMock.manufacturers,
-    mass_kg = payloadInternalMock.mass_kg,
-    mass_lbs = payloadInternalMock.mass_lbs
-)
-
 val payloadMockWithUnsavedLaunch: PayloadInternal = PayloadInternal(
     id = "id",
     name = payloadInternalMock.name,

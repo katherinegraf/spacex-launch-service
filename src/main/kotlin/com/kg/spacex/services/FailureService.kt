@@ -3,13 +3,10 @@ package com.kg.spacex.services
 import com.kg.spacex.models.launch.failure.FailureExternal
 import com.kg.spacex.models.launch.failure.FailureInternal
 import com.kg.spacex.repos.FailureRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class FailureService @Autowired constructor (private var repo: FailureRepository) {
-
-    // TODO refactor for cleanup
+class FailureService (private var repo: FailureRepository) {
 
     /**
      * Converts FailureInternals to FailureExternals by adding on a launchId attribute
