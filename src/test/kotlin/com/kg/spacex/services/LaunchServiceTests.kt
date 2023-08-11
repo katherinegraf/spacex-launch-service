@@ -182,7 +182,7 @@ class LaunchServiceTests @Autowired constructor (
 
             val queriedFailures = failureRepo.findAllByLaunchId(launchInternalMock.id)
             assert(queriedFailures.isNotEmpty())
-            assert(queriedFailures[0].reason == failureMock.reason)
+            assert(queriedFailures[0].reason == failureInternalMock.reason)
         }
 
         @Test
