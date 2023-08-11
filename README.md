@@ -3,7 +3,8 @@ A Kotlin app that integrates with the SpaceX API to aggregate information from v
 
 ## **How to use it**
 - Set up a local postgres database called `spacex`; set up username/password in `application.yml`
-- To run app, use `./gradlew bootrun`
+- To run app, use `./gradlew bootRun`
+- To run tests, use `./gradlew test`
 - Open a web browser to `http://localhost:8080/`
 
 ## **Example Launch Object**
