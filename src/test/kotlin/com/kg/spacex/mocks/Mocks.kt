@@ -5,6 +5,7 @@ import com.kg.spacex.models.Launchpad
 import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.launch.LaunchExternal
 import com.kg.spacex.models.launch.LaunchInternal
+import com.kg.spacex.models.launch.failure.FailureExternal
 import com.kg.spacex.models.launch.failure.FailureInternal
 import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.models.payload.PayloadInternal
@@ -119,7 +120,7 @@ val capsuleExternalMock: CapsuleExternal = CapsuleExternal(
     land_landings = capsuleInternalMock.land_landings,
 )
 
-val failureMock: FailureInternal = FailureInternal(
+val failureInternalMock: FailureInternal = FailureInternal(
     time = 99,
     altitude = 99,
     reason = "example failure"
@@ -130,7 +131,7 @@ val launchInternalMock: LaunchInternal = LaunchInternal(
     details = "Launch was scrubbed on first attempt, second launch attempt was successful",
     date_utc = "2012-05-22T07:44:00.000Z",
     success = true,
-    failures = listOf(failureMock),
+    failures = listOf(failureInternalMock),
     id = "5eb87cdfffd86e000604b331",
     launchpadId = launchpadMock.id,
     payloadIds = listOf(payloadInternalMock.id),
@@ -142,11 +143,18 @@ val launchInternalMockEdited: LaunchInternal = LaunchInternal(
     details = launchInternalMock.details,
     date_utc = launchInternalMock.date_utc,
     success = false,
-    failures = launchInternalMock.failures,
+    failures = listOf(failureInternalMock),
     id = launchInternalMock.id,
     launchpadId = launchInternalMock.launchpadId,
     payloadIds = launchInternalMock.payloadIds,
     capsuleIds = launchInternalMock.capsuleIds
+)
+
+val failureExternalMock: FailureExternal = FailureExternal(
+    time = 99,
+    altitude = 99,
+    reason = "example failure",
+    launchId = launchInternalMock.id
 )
 
 val launchExternalMock: LaunchExternal = LaunchExternal(

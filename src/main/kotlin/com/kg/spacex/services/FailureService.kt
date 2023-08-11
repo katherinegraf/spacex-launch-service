@@ -31,7 +31,22 @@ class FailureService (private var repo: FailureRepository) {
     fun saveOrUpdate(
         failures: List<FailureExternal>
     ) {
-        failures.forEach { repo.save(it) }
+        failures.forEach {
+            if (!alreadyExists(it)) { repo.save(it) }
+        }
+    }
+
+    fun alreadyExists(
+        failure: FailureExternal
+    ): Boolean {
+        var result = false
+        val existingFailures = repo.findAllByLaunchId(failure.launchId)
+        existingFailures.forEach {
+            if (it.time == failure.time && it.altitude == failure.altitude && it.reason == failure.reason) {
+                result = true
+            }
+        }
+        return result
     }
 
     fun getAllByLaunchId(
