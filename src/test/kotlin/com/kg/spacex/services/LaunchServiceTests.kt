@@ -50,6 +50,16 @@ class LaunchServiceTests @Autowired constructor (
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class FetchFromAPI {
 
+        @BeforeAll
+        fun setup() {
+            failureRepo.deleteAll()
+            launchCapsuleRepo.deleteAll()
+            capsuleRepo.deleteAll()
+            payloadRepo.deleteAll()
+            launchRepo.deleteAll()
+            launchpadRepo.deleteAll()
+        }
+
         @AfterAll
         fun tearDown() {
             failureRepo.deleteAll()
@@ -232,6 +242,8 @@ class LaunchServiceTests @Autowired constructor (
 
             // when / then
             assertThrows<ResourceNotFoundException> { mockService.getAll() }
+            verify { mockLaunchRepo.findFirstByOrderById() }
+            verify { mockLaunchRepo.findAllByOrderById() }
         }
 
         @Test

@@ -1,7 +1,6 @@
 package com.kg.spacex.services
 
 import com.kg.spacex.mocks.*
-import com.kg.spacex.models.launch.LaunchInternal
 import com.kg.spacex.models.payload.PayloadExternal
 import com.kg.spacex.models.payload.PayloadInternal
 import com.kg.spacex.repos.FailureRepository
@@ -107,10 +106,11 @@ class PayloadServiceTests @Autowired constructor (
         fun setup() {
             launchpadService.saveOrUpdate(listOf(launchpadMock))
             launchService.saveOrUpdate(listOf(launchInternalMock))
+            repo.deleteAll()
         }
 
         @AfterEach
-        fun tearDownEachTime() {
+        fun tearDownAfterEach() {
             repo.deleteAll()
         }
 
