@@ -109,6 +109,8 @@ class SpaceXControllerTests @Autowired constructor (
             val result = mockController.index()
 
             // then
+            verify { mockLaunchRepo.findFirstByOrderById() }
+            verify { mockLaunchRepo.findAllByOrderById() }
             assertThrows<ResourceNotFoundException> { mockLaunchService.getAll() }
             assert(result is ResponseEntity<*>)
             result as ResponseEntity<*>
@@ -259,6 +261,7 @@ class SpaceXControllerTests @Autowired constructor (
             val result = mockController.getLaunchFromAPI("someId")
 
             // then
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result is ResponseEntity<*>)
             result as ResponseEntity<*>
             assert(result.statusCode == HttpStatus.NOT_FOUND && result.body is ErrorMessage)
@@ -289,6 +292,7 @@ class SpaceXControllerTests @Autowired constructor (
             val result = mockController.getLaunchesFromAPI()
 
             // then
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result is ResponseEntity<*>)
             result as ResponseEntity<*>
             assert(result.statusCode == HttpStatus.NOT_FOUND && result.body is ErrorMessage)
@@ -320,6 +324,7 @@ class SpaceXControllerTests @Autowired constructor (
             val result = mockController.getCapsuleFromAPI("someId")
 
             // then
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result is ResponseEntity<*>)
             result as ResponseEntity<*>
             assert(result.statusCode == HttpStatus.NOT_FOUND && result.body is ErrorMessage)
@@ -350,6 +355,7 @@ class SpaceXControllerTests @Autowired constructor (
             val result = mockController.getCapsulesFromAPI()
 
             // then
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result is ResponseEntity<*>)
             result as ResponseEntity<*>
             assert(result.statusCode == HttpStatus.NOT_FOUND && result.body is ErrorMessage)
@@ -381,6 +387,7 @@ class SpaceXControllerTests @Autowired constructor (
             val result = mockController.getPayloadFromAPI("someId")
 
             // then
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result is ResponseEntity<*>)
             result as ResponseEntity<*>
             assert(result.statusCode == HttpStatus.NOT_FOUND && result.body is ErrorMessage)
@@ -411,6 +418,7 @@ class SpaceXControllerTests @Autowired constructor (
             val result = mockController.getPayloadsFromAPI()
 
             // then
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result is ResponseEntity<*>)
             result as ResponseEntity<*>
             assert(result.statusCode == HttpStatus.NOT_FOUND && result.body is ErrorMessage)
@@ -442,6 +450,7 @@ class SpaceXControllerTests @Autowired constructor (
             val result = mockController.getLaunchpadFromAPI("someId")
 
             // then
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result is ResponseEntity<*>)
             result as ResponseEntity<*>
             assert(result.statusCode == HttpStatus.NOT_FOUND && result.body is ErrorMessage)
@@ -472,6 +481,7 @@ class SpaceXControllerTests @Autowired constructor (
             val result = mockController.getLaunchpadsFromAPI()
 
             // then
+            verify { mockApiService.handleAPICall(any(), any()) }
             assert(result is ResponseEntity<*>)
             result as ResponseEntity<*>
             assert(result.statusCode == HttpStatus.NOT_FOUND && result.body is ErrorMessage)

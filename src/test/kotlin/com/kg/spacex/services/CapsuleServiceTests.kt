@@ -3,7 +3,6 @@ package com.kg.spacex.services
 import com.kg.spacex.mocks.*
 import com.kg.spacex.models.capsule.CapsuleExternal
 import com.kg.spacex.models.capsule.CapsuleInternal
-import com.kg.spacex.models.launch.LaunchInternal
 import com.kg.spacex.repos.CapsuleRepository
 import com.kg.spacex.repos.LaunchCapsuleRepository
 import com.kg.spacex.utils.ResourceNotFoundException

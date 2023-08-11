@@ -15,14 +15,14 @@ class SpaceXAPIServiceTests {
     private lateinit var spaceXAPIService: SpaceXAPIService
 
     @Test
-    fun `should return collection of type Any when calling generic API endpoint`() {
+    fun `should return collection of type Any when calling API endpoint without unique identifier`() {
         // when
-        val resp = spaceXAPIService.handleAPICall(
+        val result = spaceXAPIService.handleAPICall(
             SPACEX_API_LAUNCHPADS_URL,
             Launchpad.ArrayDeserializer()
         )
         // then
-        assert(resp is Array<*>)
+        assert(result is Array<*>)
     }
 
     @Test
