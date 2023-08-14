@@ -1,5 +1,5 @@
 ## **What it is**
-A Kotlin app that integrates with the SpaceX API to aggregate information from various API endpoints to present a more unified representation of each SpaceX Launch,  with its associated Launchpad, Payload, and Capsule data.
+A Kotlin app that integrates with the SpaceX API to aggregate information from various API endpoints to present a more unified representation of each SpaceX Launch,  with its associated Failure, Launchpad, Payload, and Capsule data.
 
 ## **How to use it**
 - Set up a local postgres database called `spacex`; set up username/password in `application.yml`
